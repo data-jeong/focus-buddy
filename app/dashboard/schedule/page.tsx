@@ -109,7 +109,16 @@ export default function SchedulePage() {
     const duration = endTime.getTime() - startTime.getTime()
     
     // Parse excluded dates if they exist
-    const excludedDates = schedule.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+    let excludedDates = []
+    try {
+      if (schedule.excluded_dates) {
+        excludedDates = typeof schedule.excluded_dates === 'string' 
+          ? JSON.parse(schedule.excluded_dates) 
+          : schedule.excluded_dates
+      }
+    } catch (e) {
+      excludedDates = []
+    }
     const endDate = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
     
     let currentDate = new Date(startTime)
@@ -253,7 +262,16 @@ export default function SchedulePage() {
         .eq('id', recurringDeleteModal.scheduleId)
         .single()
       
-      const excludedDates = schedule?.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+      let excludedDates = []
+      try {
+        if (schedule?.excluded_dates) {
+          excludedDates = typeof schedule.excluded_dates === 'string' 
+            ? JSON.parse(schedule.excluded_dates) 
+            : schedule.excluded_dates
+        }
+      } catch (e) {
+        excludedDates = []
+      }
       excludedDates.push(recurringDeleteModal.instanceDate)
       
       const { error } = await supabase

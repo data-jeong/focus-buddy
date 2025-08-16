@@ -23,7 +23,16 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     const duration = endTime.getTime() - startTime.getTime()
     
     // Parse excluded dates and recurrence end
-    const excludedDates = schedule.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+    let excludedDates = []
+    try {
+      if (schedule.excluded_dates) {
+        excludedDates = typeof schedule.excluded_dates === 'string' 
+          ? JSON.parse(schedule.excluded_dates) 
+          : schedule.excluded_dates
+      }
+    } catch (e) {
+      excludedDates = []
+    }
     const recurrenceEnd = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
     
     // Start from the original date but adjust to today's date with same time
