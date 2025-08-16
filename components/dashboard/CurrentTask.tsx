@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, Coffee, SkipForward, Timer, TrendingUp, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { format } from 'date-fns'
+import { cardStyles, headerStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
 
 const FOCUS_MODES = [
   { id: 'pomodoro', name: '뽀모도로', focusTime: 25, breakTime: 5 },
@@ -165,10 +167,14 @@ export default function CurrentTask() {
   }, [isRunning, isBreak])
 
   const fetchTodos = async () => {
+    const today = new Date()
+    const todayStr = format(today, 'yyyy-MM-dd')
+    
     const { data } = await supabase
       .from('todos')
       .select('*')
       .eq('completed', false)
+      .or(`due_date.eq.${todayStr},due_date.is.null,due_date.lt.${todayStr}`)
       .order('priority', { ascending: false })
       .order('created_at', { ascending: false })
     
@@ -359,9 +365,9 @@ export default function CurrentTask() {
     : ((focusMode.focusTime * 60 - timeLeft) / (focusMode.focusTime * 60)) * 100
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className={cardStyles.full}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">포커스 타이머</h2>
+        <h2 className={headerStyles.page}>포커스 타이머</h2>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -380,13 +386,13 @@ export default function CurrentTask() {
 
       {/* Task Selection with Time Stats */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className={`${textStyles.label} mb-2`}>
           작업 선택
         </label>
         <select
           value={selectedTaskId || ''}
           onChange={(e) => handleTaskSelect(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className={inputStyles.select}
         >
           <option value="">작업을 선택하세요</option>
           {todos.map((todo) => (
@@ -442,7 +448,7 @@ export default function CurrentTask() {
 
       {/* Focus Mode Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className={`${textStyles.label} mb-2`}>
           집중 모드
         </label>
         <div className="grid grid-cols-3 gap-2">

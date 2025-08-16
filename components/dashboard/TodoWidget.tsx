@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { CheckCircle, Circle, Clock, Flag, ListTodo } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { format } from 'date-fns'
+import { format, isToday, startOfDay, endOfDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import { Todo, Schedule } from '@/types/todo'
 import { getPriorityColor, getPriorityLabel } from '@/lib/constants/priority'
+import { cardStyles, headerStyles, listItemStyles, emptyStateStyles, badgeStyles } from '@/lib/constants/styles'
 
 interface TodoWidgetProps {
   initialTodos: Todo[]
@@ -20,10 +21,18 @@ export default function TodoWidget({ initialTodos }: TodoWidgetProps) {
 
   const fetchTodos = useCallback(async () => {
     try {
+      const today = new Date()
+      const todayStr = format(today, 'yyyy-MM-dd')
+      
+      // Fetch todos that are either:
+      // 1. Due today
+      // 2. Have no due date and are not completed
+      // 3. Are overdue and not completed
       const { data, error } = await supabase
         .from('todos')
         .select('*')
-        .order('completed', { ascending: true })
+        .eq('completed', false)
+        .or(`due_date.eq.${todayStr},due_date.is.null,due_date.lt.${todayStr}`)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(10)
@@ -165,23 +174,23 @@ export default function TodoWidget({ initialTodos }: TodoWidgetProps) {
 
   return (
     <div 
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 transition-all duration-200 ${
+      className={`${cardStyles.full} transition-all duration-200 ${
         dragOverActive 
-          ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.01]' 
-          : 'border-gray-200 dark:border-gray-700'
-      } p-6`}
+          ? 'border-2 border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.01]' 
+          : ''
+      }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">오늘의 할 일</h2>
+        <h2 className={headerStyles.widget}>오늘의 할 일</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500 dark:text-gray-300">
             {stats.pending}개 남음
           </span>
           {stats.overdue > 0 && (
-            <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 rounded-full">
+            <span className={`${badgeStyles.default} ${badgeStyles.danger}`}>
               {stats.overdue}개 지연
             </span>
           )}
@@ -198,12 +207,12 @@ export default function TodoWidget({ initialTodos }: TodoWidgetProps) {
       
       <div className="space-y-3">
         {todos.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ListTodo className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
+          <div className={emptyStateStyles.container}>
+            <div className={emptyStateStyles.icon}>
+              <ListTodo className={`${emptyStateStyles.iconSize} text-indigo-500 dark:text-indigo-400`} />
             </div>
-            <p className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">할 일이 없습니다</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">새로운 할 일을 추가해보세요!</p>
+            <p className={emptyStateStyles.title}>오늘 할 일이 없습니다</p>
+            <p className={emptyStateStyles.description}>새로운 할 일을 추가해보세요!</p>
           </div>
         ) : (
           todos.map((todo) => (
@@ -228,7 +237,7 @@ const TodoItem = React.memo(({
   onToggle: (id: string, completed: boolean) => void 
 }) => {
   return (
-    <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+    <div className={listItemStyles.base}>
       <button
         onClick={() => onToggle(todo.id, todo.completed)}
         className="mt-0.5 flex-shrink-0"

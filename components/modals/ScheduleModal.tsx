@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format, parse } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { modalStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
 
 interface ScheduleModalProps {
   open: boolean
@@ -225,8 +226,8 @@ export default function ScheduleModal({
   return (
     <Dialog.Root open={open} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto z-50">
+        <Dialog.Overlay className={modalStyles.overlay} />
+        <Dialog.Content className={`${modalStyles.content} max-h-[90vh] overflow-y-auto`}>
           <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between">
               <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -241,14 +242,14 @@ export default function ScheduleModal({
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`${textStyles.label} mb-1`}>
                 제목
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className={inputStyles.base}
                 placeholder="일정 제목"
                 autoFocus
               />
@@ -256,13 +257,13 @@ export default function ScheduleModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`${textStyles.label} mb-1`}>
                 설명 (선택)
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className={inputStyles.base}
                 placeholder="일정 설명"
                 rows={3}
               />
@@ -270,7 +271,7 @@ export default function ScheduleModal({
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`${textStyles.label} mb-1`}>
                 <Calendar className="inline h-4 w-4 mr-1" />
                 날짜
               </label>
@@ -278,7 +279,7 @@ export default function ScheduleModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className={inputStyles.base}
               />
             </div>
 
@@ -295,7 +296,7 @@ export default function ScheduleModal({
                   onChange={handleStartTimeChange}
                   onBlur={() => handleTimeBlur('start')}
                   placeholder="09:00"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className={inputStyles.base}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   예: 09:00, 930, 9시30분
@@ -312,7 +313,7 @@ export default function ScheduleModal({
                   onChange={handleEndTimeChange}
                   onBlur={() => handleTimeBlur('end')}
                   placeholder="10:00"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className={inputStyles.base}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   예: 10:00, 1030, 10시30분
@@ -343,14 +344,14 @@ export default function ScheduleModal({
 
             {/* Recurrence */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={`${textStyles.label} mb-1`}>
                 <Repeat className="inline h-4 w-4 mr-1" />
                 반복
               </label>
               <select
                 value={recurrence}
                 onChange={(e) => setRecurrence(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className={inputStyles.base}
               >
                 {RECURRENCE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -365,14 +366,14 @@ export default function ScheduleModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                className={`flex-1 ${buttonStyles.secondary}`}
               >
                 취소
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className={`flex-1 ${buttonStyles.primary}`}
               >
                 {loading ? '저장 중...' : (schedule ? '수정' : '추가')}
               </button>

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import TodoModal from '@/components/modals/TodoModal'
 import ScheduleModal from '@/components/modals/ScheduleModal'
 import { createClient } from '@/lib/supabase/client'
+import { cardStyles, headerStyles, textStyles } from '@/lib/constants/styles'
 
 export default function QuickActions() {
   const [todoModalOpen, setTodoModalOpen] = useState(false)
@@ -167,10 +168,10 @@ export default function QuickActions() {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className={cardStyles.full}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">빠른 실행</h2>
-          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+          <h2 className={headerStyles.widget}>빠른 실행</h2>
+          <div className={`flex items-center ${textStyles.small}`}>
             <Clock className="h-4 w-4 mr-1" />
             <span>생산성 도구</span>
           </div>
