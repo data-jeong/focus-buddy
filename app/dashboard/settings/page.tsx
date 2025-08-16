@@ -151,7 +151,7 @@ export default function SettingsPage() {
                     기능 제안, 버그 리포트, 개선 아이디어를 보내주세요
                   </p>
                   <a
-                    href="mailto:dev@focusbuddy.com?subject=Focus Buddy 피드백"
+                    href="mailto:lightyear94122@gmail.com?subject=Focus Buddy 피드백"
                     className={`inline-flex items-center ${buttonStyles.primary}`}
                   >
                     <Mail className="h-4 w-4 mr-2" />
@@ -210,7 +210,7 @@ export default function SettingsPage() {
                     return
                   }
                   // 실제로는 이메일로 보내기
-                  window.location.href = `mailto:dev@focusbuddy.com?subject=Focus Buddy 피드백&body=${encodeURIComponent(feedback)}`
+                  window.location.href = `mailto:lightyear94122@gmail.com?subject=Focus Buddy 피드백&body=${encodeURIComponent(feedback)}`
                   setFeedback('')
                   toast.success('피드백이 준비되었습니다! 이메일을 보내주세요 💜', {
                     duration: 3000
