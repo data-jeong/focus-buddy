@@ -88,9 +88,9 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">설정</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">피드백</h1>
         <p className="text-base text-gray-600 dark:text-gray-300">
-          앱 환경설정을 관리하세요
+          더 나은 Focus Buddy를 위한 여러분의 의견을 들려주세요
         </p>
       </div>
 
@@ -210,35 +210,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Theme Settings Section */}
-        <section>
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Settings className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                일반 설정
-              </h2>
-            </div>
-            <p className="text-base text-gray-600 dark:text-gray-300">
-              앱의 기본 설정을 관리합니다
-            </p>
-          </div>
-
-          <div className={cardStyles.full}>
-            <div className="text-center text-gray-500 dark:text-gray-400">
-              추가 설정 옵션이 곧 제공될 예정입니다
-            </div>
-          </div>
-        </section>
-
-        {/* Additional Settings Info */}
-        <section className="pt-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              설정은 자동으로 저장되며 모든 기기에 동기화됩니다
-            </p>
-          </div>
-        </section>
       </div>
     </div>
   )

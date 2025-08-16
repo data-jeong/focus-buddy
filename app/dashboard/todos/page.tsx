@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit, CheckSquare, Loader2 } from 'lucide-react'
+import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit, CheckSquare, Loader2, GripVertical, ChevronDown } from 'lucide-react'
 import TodoModal from '@/components/modals/TodoModal'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -25,12 +25,15 @@ export default function TodosPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null)
   const [filter, setFilter] = useState('all')
+  const [priorityFilter, setPriorityFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; todoId: string | null; todoTitle: string }>({ 
     open: false, 
     todoId: null, 
     todoTitle: '' 
   })
+  const [draggedTodo, setDraggedTodo] = useState<Todo | null>(null)
+  const [draggedOverTodo, setDraggedOverTodo] = useState<Todo | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export default function TodosPage() {
 
   useEffect(() => {
     filterTodos()
-  }, [todos, filter, searchQuery])
+  }, [todos, filter, priorityFilter, searchQuery])
 
   const fetchTodos = async () => {
     const { data } = await supabase
@@ -79,6 +82,11 @@ export default function TodosPage() {
       filtered = filtered.filter(todo => todo.completed)
     }
     
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(todo => todo.priority === priorityFilter)
+    }
+    
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(todo =>
@@ -87,8 +95,51 @@ export default function TodosPage() {
       )
     }
     
+    // Sort by priority
+    const priorityOrder = { high: 0, medium: 1, low: 2 }
+    filtered.sort((a, b) => {
+      return (priorityOrder[a.priority as keyof typeof priorityOrder] || 3) - 
+             (priorityOrder[b.priority as keyof typeof priorityOrder] || 3)
+    })
+    
     setFilteredTodos(filtered)
   }
+
+  const handleDragStart = useCallback((e: React.DragEvent, todo: Todo) => {
+    setDraggedTodo(todo)
+    e.dataTransfer.effectAllowed = 'move'
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }, [])
+
+  const handleDragEnter = useCallback((todo: Todo) => {
+    setDraggedOverTodo(todo)
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetTodo: Todo) => {
+    e.preventDefault()
+    
+    if (!draggedTodo || draggedTodo.id === targetTodo.id) return
+    
+    const draggedIndex = filteredTodos.findIndex(t => t.id === draggedTodo.id)
+    const targetIndex = filteredTodos.findIndex(t => t.id === targetTodo.id)
+    
+    if (draggedIndex === -1 || targetIndex === -1) return
+    
+    // Reorder the todos
+    const newTodos = [...filteredTodos]
+    newTodos.splice(draggedIndex, 1)
+    newTodos.splice(targetIndex, 0, draggedTodo)
+    
+    setFilteredTodos(newTodos)
+    setDraggedTodo(null)
+    setDraggedOverTodo(null)
+    
+    toast.success('순서가 변경되었습니다')
+  }, [draggedTodo, filteredTodos])
 
   const toggleTodo = async (id: string, completed: boolean) => {
     await supabase
@@ -228,6 +279,20 @@ export default function TodosPage() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              {/* Priority Filter Dropdown */}
+              <div className="relative">
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-900"
+                >
+                  <option value="all">모든 우선순위</option>
+                  <option value="high">높음</option>
+                  <option value="medium">중간</option>
+                  <option value="low">낮음</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -235,7 +300,7 @@ export default function TodosPage() {
                   placeholder="검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <button
@@ -280,15 +345,26 @@ export default function TodosPage() {
             filteredTodos.map((todo) => (
               <div
                 key={todo.id}
-                className="p-4 hover:bg-gray-50 transition-colors"
+                draggable
+                onDragStart={(e) => handleDragStart(e, todo)}
+                onDragOver={handleDragOver}
+                onDragEnter={() => handleDragEnter(todo)}
+                onDrop={(e) => handleDrop(e, todo)}
+                className={`p-4 hover:bg-gray-50 transition-all cursor-move ${
+                  draggedOverTodo?.id === todo.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
+                } ${draggedTodo?.id === todo.id ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-start space-x-3">
+                  {/* Drag Handle */}
+                  <div className="mt-0.5 cursor-move text-gray-400 hover:text-gray-600">
+                    <GripVertical className="h-5 w-5" />
+                  </div>
                   <button
                     onClick={() => toggleTodo(todo.id, todo.completed)}
                     className="mt-0.5 transition-transform hover:scale-110"
                   >
                     {todo.completed ? (
-                      <CheckCircle className="h-5 w-5 text-success-500" />
+                      <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
                       <Circle className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                     )}
@@ -313,11 +389,11 @@ export default function TodosPage() {
                             getPriorityColor(todo.priority)
                           }`}>
                             {todo.priority === 'high' ? '높음' :
-                             todo.priority === 'medium' ? '보통' : '낮음'}
+                             todo.priority === 'medium' ? '중간' : '낮음'}
                           </span>
                           {todo.due_date && (
                             <span className="text-xs text-gray-500">
-                              마감: {format(new Date(todo.due_date), 'MM월 dd일 HH:mm', { locale: ko })}
+                              마감: {format(new Date(todo.due_date), 'MM월 dd일', { locale: ko })}
                             </span>
                           )}
                         </div>

@@ -168,36 +168,37 @@ export default function AchievementsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Motivational Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-black text-gray-900 dark:text-gray-100 mb-3">
-          {format(currentMonth, 'yyyy년 MM월', { locale: ko })}의 성과
-        </h1>
-        <p className="text-xl text-gray-700 dark:text-gray-300 font-semibold">
-          {getMotivationalMessage()}
-        </p>
-      </div>
+    <div className="w-full h-full min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Motivational Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">
+            {format(currentMonth, 'yyyy년 MM월', { locale: ko })}의 성과
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-gray-700 dark:text-gray-300 font-semibold">
+            {getMotivationalMessage()}
+          </p>
+        </div>
 
-      {/* Achievement Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {achievements.map((achievement, index) => (
-          <div key={index} className="relative group">
-            <div className={`absolute inset-0 bg-gradient-to-r ${achievement.color} rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity`} />
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1">
-              <div className="text-3xl mb-3">{achievement.title}</div>
-              <div className="text-3xl font-black text-gray-900 dark:text-gray-100 mb-2">
-                {achievement.value}
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-3">
-                {achievement.desc}
-              </p>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full bg-gradient-to-r ${achievement.color} transition-all`}
-                  style={{ width: `${achievement.progress}%` }}
-                />
-              </div>
+        {/* Achievement Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-6 sm:mb-8">
+          {achievements.map((achievement, index) => (
+            <div key={index} className="relative group">
+              <div className={`absolute inset-0 bg-gradient-to-r ${achievement.color} rounded-xl sm:rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+              <div className="relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1">
+                <div className="text-xl sm:text-2xl lg:text-3xl mb-2 sm:mb-3">{achievement.title}</div>
+                <div className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
+                  {achievement.value}
+                </div>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2 sm:mb-3">
+                  {achievement.desc}
+                </p>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2">
+                  <div 
+                    className={`h-1.5 sm:h-2 rounded-full bg-gradient-to-r ${achievement.color} transition-all`}
+                    style={{ width: `${achievement.progress}%` }}
+                  />
+                </div>
             </div>
           </div>
         ))}

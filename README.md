@@ -1,6 +1,6 @@
 # Focus Buddy 🎯
 
-[![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
+[![Version](https://img.shields.io/badge/version-0.1.6-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)

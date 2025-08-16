@@ -146,8 +146,17 @@ export default function ScheduleModal({
         setDate(format(new Date(), 'yyyy-MM-dd'))
       }
       
-      setStartTime(initialStartTime || '09:00')
-      setEndTime(initialEndTime || '10:00')
+      // Use current time as default start time, +1 hour for end time
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = Math.floor(now.getMinutes() / 15) * 15 // Round to nearest 15 minutes
+      
+      const defaultStartTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`
+      const endHour = (currentHour + 1) % 24
+      const defaultEndTime = `${endHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`
+      
+      setStartTime(initialStartTime || defaultStartTime)
+      setEndTime(initialEndTime || defaultEndTime)
     }
   }, [schedule, open, initialDate, initialStartTime, initialEndTime])
 

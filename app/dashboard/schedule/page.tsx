@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, isSameWeek } from 'date-fns'
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, isSameWeek, isWithinInterval, addMonths } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit, X, Calendar, Clock, Repeat } from 'lucide-react'
 import ScheduleModal from '@/components/modals/ScheduleModal'

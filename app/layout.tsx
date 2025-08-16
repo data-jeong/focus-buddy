@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Focus Buddy - ADHD 스마트 일정 관리",
-  description: "ADHD를 위한 할 일 관리, 시간표, 알림 기능을 제공하는 생산성 도구",
+  title: "시간을 지배하는 자가 미래를 만든다 - Focus Buddy",
+  description: "시간을 지배하는 자가 미래를 만든다. 체계적인 일정 관리와 집중력 향상을 위한 스마트 생산성 도구",
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',

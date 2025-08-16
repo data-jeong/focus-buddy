@@ -81,6 +81,11 @@ export default function TodoWidget({ initialTodos }: TodoWidgetProps) {
         .eq('id', id)
       
       if (error) throw error
+      
+      // Refresh the page after successful toggle
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
     } catch (error) {
       // Revert on error
       setTodos(prev => prev.map(todo => 
@@ -149,6 +154,10 @@ export default function TodoWidget({ initialTodos }: TodoWidgetProps) {
         toast.success('일정이 할 일로 추가되었습니다!', {
           icon: '✅'
         })
+        // Refresh the page after successful drop
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
       }
     } catch (error) {
       console.error('Drop error:', error)

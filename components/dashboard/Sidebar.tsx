@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
-  LayoutDashboard, CheckSquare, Calendar, Trophy, Settings, 
+  LayoutDashboard, CheckSquare, Calendar, Trophy, MessageSquare, 
   LogOut, Menu, X, ChevronLeft, ChevronRight 
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -15,7 +15,7 @@ const navigation = [
   { name: '할 일', href: '/dashboard/todos', icon: CheckSquare, color: 'text-green-500' },
   { name: '시간표', href: '/dashboard/schedule', icon: Calendar, color: 'text-purple-500' },
   { name: '나의 업적', href: '/dashboard/achievements', icon: Trophy, color: 'text-yellow-500' },
-  { name: '설정', href: '/dashboard/settings', icon: Settings, color: 'text-gray-500' },
+  { name: '피드백', href: '/dashboard/settings', icon: MessageSquare, color: 'text-indigo-500' },
 ]
 
 export default function Sidebar() {

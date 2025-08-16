@@ -325,6 +325,11 @@ export default function CurrentTask() {
     setIsBreak(false)
     setTimeLeft(focusMode.focusTime * 60)
     setSessionTime(0)
+    
+    // Refresh the page after completing task
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500)
   }
 
   const handleTaskSelect = (taskId: string) => {
