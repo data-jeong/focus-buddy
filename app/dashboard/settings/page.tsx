@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Settings } from 'lucide-react'
+import { Settings, Coffee, MessageSquare, Heart, Github, Mail, ExternalLink } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { cardStyles, buttonStyles, headerStyles } from '@/lib/constants/styles'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [feedback, setFeedback] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -84,6 +86,145 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-8">
+        {/* Developer Support Section */}
+        <section>
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-2">
+              <Heart className="h-5 w-5 text-red-500" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                개발자 후원
+              </h2>
+            </div>
+            <p className="text-base text-gray-600 dark:text-gray-300">
+              Focus Buddy 개발을 응원해주세요!
+            </p>
+          </div>
+
+          <div className={cardStyles.full}>
+            <div className="text-center">
+              <Coffee className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                커피 한 잔 사주기 ☕
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                여러분의 후원이 더 나은 앱을 만드는 원동력이 됩니다
+              </p>
+              <a
+                href="https://www.buymeacoffee.com/focusbuddy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                <Coffee className="h-5 w-5 mr-2" />
+                Buy Me a Coffee
+                <ExternalLink className="h-4 w-4 ml-2" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Feedback Section */}
+        <section>
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-2">
+              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                개발 의견 & 피드백
+              </h2>
+            </div>
+            <p className="text-base text-gray-600 dark:text-gray-300">
+              더 나은 Focus Buddy를 위한 여러분의 의견을 들려주세요
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={cardStyles.full}>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    이메일로 의견 보내기
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    기능 제안, 버그 리포트, 개선 아이디어를 보내주세요
+                  </p>
+                  <a
+                    href="mailto:dev@focusbuddy.com?subject=Focus Buddy 피드백"
+                    className={`inline-flex items-center ${buttonStyles.primary}`}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    이메일 보내기
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className={cardStyles.full}>
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <Github className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    GitHub Issues
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    GitHub에서 이슈를 등록하고 개발 과정에 참여하세요
+                  </p>
+                  <a
+                    href="https://github.com/data-jeong/focus-buddy/issues"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center ${buttonStyles.secondary}`}
+                  >
+                    <Github className="h-4 w-4 mr-2" />
+                    GitHub 방문
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Feedback Form */}
+        <section>
+          <div className={cardStyles.full}>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+              빠른 피드백
+            </h3>
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="여기에 의견을 작성해주세요..."
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              rows={4}
+            />
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => {
+                  if (!feedback.trim()) {
+                    toast.error('피드백 내용을 입력해주세요')
+                    return
+                  }
+                  // 실제로는 이메일로 보내기
+                  window.location.href = `mailto:dev@focusbuddy.com?subject=Focus Buddy 피드백&body=${encodeURIComponent(feedback)}`
+                  setFeedback('')
+                  toast.success('피드백이 준비되었습니다! 이메일을 보내주세요 💜', {
+                    duration: 3000
+                  })
+                }}
+                className={buttonStyles.primary}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                피드백 전송
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* Theme Settings Section */}
         <section>
           <div className="mb-6">
@@ -98,11 +239,9 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-6">
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                추가 설정 옵션이 곧 제공될 예정입니다
-              </div>
+          <div className={cardStyles.full}>
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              추가 설정 옵션이 곧 제공될 예정입니다
             </div>
           </div>
         </section>
