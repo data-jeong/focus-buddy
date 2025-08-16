@@ -23,7 +23,6 @@ export default async function DashboardPage() {
     supabase
       .from('schedules')
       .select('*')
-      .or(`start_time.gte.${todayStart.toISOString()}.lte.${todayEnd.toISOString()},recurrence.neq.none`)
       .order('start_time', { ascending: true })
   ])
 

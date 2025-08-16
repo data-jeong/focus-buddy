@@ -15,12 +15,10 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     const instances: any[] = []
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
-    const todayEnd = new Date()
-    todayEnd.setHours(23, 59, 59, 999)
     
-    const startTime = new Date(schedule.start_time)
-    const endTime = new Date(schedule.end_time)
-    const duration = endTime.getTime() - startTime.getTime()
+    const originalStart = new Date(schedule.start_time)
+    const originalEnd = new Date(schedule.end_time)
+    const duration = originalEnd.getTime() - originalStart.getTime()
     
     // Parse excluded dates and recurrence end
     let excludedDates = []
@@ -35,36 +33,46 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     }
     const recurrenceEnd = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
     
-    // Start from the original date but adjust to today's date with same time
-    let currentDate = new Date(todayStart)
-    currentDate.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0)
+    // Create today's instance with the same time as original
+    const todayInstance = new Date(todayStart)
+    todayInstance.setHours(originalStart.getHours(), originalStart.getMinutes(), 0, 0)
     
     // Check if today is excluded or past recurrence end
-    const todayStr = currentDate.toISOString().split('T')[0]
+    const todayStr = todayStart.toISOString().split('T')[0]
     if (excludedDates.includes(todayStr)) {
       return instances
     }
     
-    if (recurrenceEnd && currentDate > recurrenceEnd) {
+    if (recurrenceEnd && todayStart > recurrenceEnd) {
+      return instances
+    }
+    
+    // Check if we've started the recurrence yet
+    const scheduleStartDate = new Date(originalStart)
+    scheduleStartDate.setHours(0, 0, 0, 0)
+    if (todayStart < scheduleStartDate) {
       return instances
     }
     
     // Check if the schedule should occur today based on recurrence type
     const shouldOccurToday = () => {
       const today = new Date()
+      const dayOfWeek = today.getDay()
+      const dayOfMonth = today.getDate()
+      
       switch (schedule.recurrence) {
         case 'daily':
           return true
         case 'weekdays':
-          return today.getDay() >= 1 && today.getDay() <= 5
+          return dayOfWeek >= 1 && dayOfWeek <= 5
         case 'weekends':
-          return today.getDay() === 0 || today.getDay() === 6
+          return dayOfWeek === 0 || dayOfWeek === 6
         case 'weekly':
-          return today.getDay() === startTime.getDay()
+          return dayOfWeek === originalStart.getDay()
         case 'monthly':
-          return today.getDate() === startTime.getDate()
+          return dayOfMonth === originalStart.getDate()
         case 'yearly':
-          return today.getMonth() === startTime.getMonth() && today.getDate() === startTime.getDate()
+          return today.getMonth() === originalStart.getMonth() && dayOfMonth === originalStart.getDate()
         default:
           return false
       }
@@ -73,9 +81,9 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     if (shouldOccurToday()) {
       instances.push({
         ...schedule,
-        id: `${schedule.id}_${currentDate.getTime()}`,
-        start_time: currentDate.toISOString(),
-        end_time: new Date(currentDate.getTime() + duration).toISOString(),
+        id: `${schedule.id}_${todayInstance.getTime()}`,
+        start_time: todayInstance.toISOString(),
+        end_time: new Date(todayInstance.getTime() + duration).toISOString(),
         is_recurring_instance: true,
         original_id: schedule.id,
         instance_date: todayStr
@@ -85,15 +93,14 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     return instances
   }
 
-  useEffect(() => {
-    // Process initial schedules to include recurring instances
+  const processSchedules = (scheduleData: any[]) => {
     const allSchedules: any[] = []
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const todayEnd = new Date()
     todayEnd.setHours(23, 59, 59, 999)
     
-    initialSchedules.forEach(schedule => {
+    scheduleData.forEach(schedule => {
       const startTime = new Date(schedule.start_time)
       
       if (schedule.recurrence && schedule.recurrence !== 'none') {
@@ -104,41 +111,28 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
         allSchedules.push(schedule)
       }
     })
-    setSchedules(allSchedules.sort((a, b) => 
+    
+    return allSchedules.sort((a, b) => 
       new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    ))
+    )
+  }
+
+  useEffect(() => {
+    // Process initial schedules to include recurring instances
+    const processed = processSchedules(initialSchedules || [])
+    setSchedules(processed)
   }, [initialSchedules])
 
   useEffect(() => {
     const fetchAndProcessSchedules = async () => {
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
-      const todayEnd = new Date()
-      todayEnd.setHours(23, 59, 59, 999)
-      
       const { data } = await supabase
         .from('schedules')
         .select('*')
-        .or(`start_time.gte.${todayStart.toISOString()}.lte.${todayEnd.toISOString()},recurrence.neq.none`)
         .order('start_time', { ascending: true })
       
       if (data) {
-        const allSchedules: any[] = []
-        
-        data.forEach(schedule => {
-          const startTime = new Date(schedule.start_time)
-          
-          if (schedule.recurrence && schedule.recurrence !== 'none') {
-            const instances = generateTodayRecurringInstances(schedule)
-            allSchedules.push(...instances)
-          } else if (isWithinInterval(startTime, { start: todayStart, end: todayEnd })) {
-            allSchedules.push(schedule)
-          }
-        })
-        
-        setSchedules(allSchedules.sort((a, b) => 
-          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-        ))
+        const processed = processSchedules(data)
+        setSchedules(processed)
       }
     }
     
@@ -146,7 +140,7 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     fetchAndProcessSchedules()
     
     const channel = supabase
-      .channel('schedules-changes')
+      .channel('schedules-widget-changes')
       .on(
         'postgres_changes',
         {
