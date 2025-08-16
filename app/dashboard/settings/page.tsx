@@ -5,16 +5,20 @@ import { createClient } from '@/lib/supabase/client'
 import { Bell, Moon, Sun, Monitor, Settings, Palette, BellOff, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { registerServiceWorker, subscribeToPushNotifications, requestNotificationPermission } from '@/lib/push-notifications'
-import { useTheme } from '@/components/ThemeProvider'
+import { getTheme, setTheme as setThemeToDOM, type Theme } from '@/lib/theme'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [theme, setTheme] = useState<Theme>('system')
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const supabase = createClient()
-  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
+    // Get current theme
+    const currentTheme = getTheme()
+    setTheme(currentTheme)
+    
     fetchSettings()
     
     // Check notification permission
@@ -35,12 +39,13 @@ export default function SettingsPage() {
 
     if (!data) {
       // Create default settings
+      const currentTheme = getTheme()
       const { data: newSettings } = await supabase
         .from('user_settings')
         .insert([{
           user_id: user.id,
           notifications_enabled: false,
-          theme: theme || 'system',
+          theme: currentTheme,
         }])
         .select()
         .single()
@@ -48,6 +53,10 @@ export default function SettingsPage() {
       setSettings(newSettings)
     } else {
       setSettings(data)
+      if (data.theme) {
+        setTheme(data.theme)
+        setThemeToDOM(data.theme)
+      }
     }
   }
 
@@ -92,8 +101,9 @@ export default function SettingsPage() {
     }
   }
 
-  const handleThemeChange = async (newTheme: 'light' | 'dark' | 'system') => {
+  const handleThemeChange = async (newTheme: Theme) => {
     setTheme(newTheme)
+    setThemeToDOM(newTheme)
     await updateSettings({ theme: newTheme })
   }
 
@@ -110,25 +120,28 @@ export default function SettingsPage() {
 
   const themeOptions = [
     {
-      value: 'light',
+      value: 'light' as Theme,
       label: '라이트 모드',
       description: '밝은 테마',
       icon: Sun,
-      preview: 'bg-gradient-to-br from-yellow-100 to-orange-100',
+      iconColor: 'text-yellow-500',
+      preview: 'bg-gradient-to-br from-white via-gray-50 to-gray-100',
     },
     {
-      value: 'dark',
+      value: 'dark' as Theme,
       label: '다크 모드',
       description: '어두운 테마',
       icon: Moon,
-      preview: 'bg-gradient-to-br from-gray-800 to-gray-900',
+      iconColor: 'text-indigo-500',
+      preview: 'bg-gradient-to-br from-gray-800 via-gray-900 to-black',
     },
     {
-      value: 'system',
+      value: 'system' as Theme,
       label: '시스템 설정',
       description: '기기 설정 따르기',
       icon: Monitor,
-      preview: 'bg-gradient-to-br from-gray-200 to-gray-400',
+      iconColor: 'text-gray-500',
+      preview: 'bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500',
     },
   ]
 
@@ -136,19 +149,23 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">설정</h1>
-        <p className="text-gray-600 dark:text-gray-400">앱 환경설정과 개인화 옵션을 관리하세요</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">설정</h1>
+        <p className="text-base text-gray-600 dark:text-gray-300">
+          앱 환경설정과 개인화 옵션을 관리하세요
+        </p>
       </div>
 
       <div className="space-y-8">
         {/* Theme Section */}
         <section>
-          <div className="mb-4">
+          <div className="mb-6">
             <div className="flex items-center space-x-2 mb-2">
               <Palette className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">테마 설정</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                테마 설정
+              </h2>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-base text-gray-600 dark:text-gray-300">
               선호하는 색상 테마를 선택하세요
             </p>
           </div>
@@ -161,38 +178,34 @@ export default function SettingsPage() {
               return (
                 <button
                   key={option.value}
-                  onClick={() => handleThemeChange(option.value as 'light' | 'dark' | 'system')}
-                  className={`relative group overflow-hidden rounded-xl border-2 transition-all ${
+                  onClick={() => handleThemeChange(option.value)}
+                  className={`relative group overflow-hidden rounded-xl border-2 transition-all transform hover:scale-105 ${
                     isSelected
-                      ? 'border-indigo-600 dark:border-indigo-400 shadow-lg scale-105'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
+                      ? 'border-indigo-500 shadow-xl ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-900'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-lg'
                   }`}
                 >
                   {/* Preview Background */}
-                  <div className={`absolute inset-0 ${option.preview} opacity-20`} />
+                  <div className={`absolute inset-0 ${option.preview} opacity-30`} />
                   
                   {/* Content */}
-                  <div className="relative p-6 text-left">
+                  <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 text-left">
                     <div className="flex items-start justify-between mb-4">
-                      <Icon className={`h-8 w-8 ${
-                        isSelected 
-                          ? 'text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-600 dark:text-gray-400'
-                      }`} />
+                      <Icon className={`h-10 w-10 ${option.iconColor}`} />
                       {isSelected && (
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-400">
-                          <Check className="h-4 w-4 text-white" />
+                        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-500 shadow-lg">
+                          <Check className="h-4 w-4 text-white" strokeWidth={3} />
                         </div>
                       )}
                     </div>
-                    <h3 className={`font-medium mb-1 ${
+                    <h3 className={`font-semibold text-lg mb-1 ${
                       isSelected 
                         ? 'text-indigo-600 dark:text-indigo-400' 
-                        : 'text-gray-900 dark:text-gray-100'
+                        : 'text-gray-900 dark:text-white'
                     }`}>
                       {option.label}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       {option.description}
                     </p>
                   </div>
@@ -204,23 +217,25 @@ export default function SettingsPage() {
 
         {/* Notifications Section */}
         <section>
-          <div className="mb-4">
+          <div className="mb-6">
             <div className="flex items-center space-x-2 mb-2">
               <Bell className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">알림 설정</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                알림 설정
+              </h2>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-base text-gray-600 dark:text-gray-300">
               중요한 업데이트와 리마인더를 받으세요
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-lg ${
+                  <div className={`p-3 rounded-xl ${
                     settings.notifications_enabled 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30' 
+                      ? 'bg-indigo-100 dark:bg-indigo-900/50' 
                       : 'bg-gray-100 dark:bg-gray-700'
                   }`}>
                     {settings.notifications_enabled ? (
@@ -230,10 +245,10 @@ export default function SettingsPage() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
                       푸시 알림
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                       할 일 리마인더와 일정 알림을 브라우저로 받습니다
                     </p>
                   </div>
@@ -241,33 +256,33 @@ export default function SettingsPage() {
                 <button
                   onClick={handleNotificationToggle}
                   disabled={loading}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shadow-inner ${
                     settings.notifications_enabled 
-                      ? 'bg-indigo-600' 
+                      ? 'bg-indigo-500' 
                       : 'bg-gray-300 dark:bg-gray-600'
                   } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
-                      settings.notifications_enabled ? 'translate-x-6' : 'translate-x-1'
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform ${
+                      settings.notifications_enabled ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
 
               {notificationPermission === 'denied' && (
-                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h4 className="text-sm font-medium text-red-800 dark:text-red-400">
+                      <h4 className="text-sm font-semibold text-red-800 dark:text-red-300">
                         알림이 차단됨
                       </h4>
-                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">
                         브라우저 설정에서 이 사이트의 알림을 허용해주세요.
                       </p>
                     </div>
@@ -276,13 +291,13 @@ export default function SettingsPage() {
               )}
 
               {notificationPermission === 'granted' && settings.notifications_enabled && (
-                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-400" />
+                      <Check className="h-5 w-5 text-green-500" />
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-green-700 dark:text-green-300">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
                         알림이 활성화되었습니다. 중요한 업데이트를 놓치지 않으세요!
                       </p>
                     </div>
@@ -295,8 +310,10 @@ export default function SettingsPage() {
 
         {/* Additional Settings Info */}
         <section className="pt-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>설정은 자동으로 저장되며 모든 기기에 동기화됩니다</p>
+          <div className="text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              설정은 자동으로 저장되며 모든 기기에 동기화됩니다
+            </p>
           </div>
         </section>
       </div>
