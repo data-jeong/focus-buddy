@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Settings, Coffee, MessageSquare, Heart, Github, Mail, ExternalLink, Copy } from 'lucide-react'
+import { Settings, Coffee, MessageSquare, Heart, Github, ExternalLink, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cardStyles, buttonStyles, headerStyles } from '@/lib/constants/styles'
 
@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [sendingFeedback, setSendingFeedback] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -137,64 +138,7 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={cardStyles.full}>
-              <div className="flex items-start space-x-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                    이메일로 의견 보내기
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    기능 제안, 버그 리포트, 개선 아이디어를 보내주세요
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-mono">
-                    lightyear94122@gmail.com
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        const email = 'lightyear94122@gmail.com'
-                        navigator.clipboard.writeText(email).then(() => {
-                          toast.success('이메일 주소가 복사되었습니다!', {
-                            duration: 2000
-                          })
-                        }).catch(() => {
-                          toast.error('복사에 실패했습니다')
-                        })
-                      }}
-                      className="inline-flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      주소 복사
-                    </button>
-                    <button
-                      onClick={() => {
-                        const email = 'lightyear94122@gmail.com'
-                        const subject = 'Focus Buddy 피드백'
-                        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}`
-                        
-                        // 방법 1: window.location.href 사용
-                        window.location.href = mailtoLink
-                        
-                        // 이메일 클라이언트가 열렸다는 메시지 표시
-                        toast.success('이메일 클라이언트를 여는 중...', {
-                          duration: 2000
-                        })
-                      }}
-                      className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      이메일 열기
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className={cardStyles.full}>
+          <div className={cardStyles.full}>
               <div className="flex items-start space-x-4">
                 <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   <Github className="h-6 w-6 text-gray-700 dark:text-gray-300" />
@@ -219,7 +163,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
         </section>
 
         {/* Quick Feedback Form */}
@@ -237,46 +180,59 @@ export default function SettingsPage() {
             />
             <div className="mt-4 flex justify-end">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!feedback.trim()) {
                     toast.error('피드백 내용을 입력해주세요')
                     return
                   }
                   
+                  setSendingFeedback(true)
+                  
                   try {
-                    // 방법 1: 직접 이메일 링크 생성
-                    const email = 'lightyear94122@gmail.com'
-                    const subject = 'Focus Buddy 피드백'
-                    const body = feedback
+                    const { data: { user } } = await supabase.auth.getUser()
                     
-                    // 이메일 링크 생성
-                    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                    if (!user) {
+                      toast.error('로그인이 필요합니다')
+                      setSendingFeedback(false)
+                      return
+                    }
                     
-                    // 새 창이 아닌 현재 창에서 열기
-                    window.location.href = mailtoLink
-                    
-                    // 피드백 초기화 및 성공 메시지
-                    setTimeout(() => {
-                      setFeedback('')
-                      toast.success('이메일 클라이언트를 여는 중... 이메일을 보내주세요! 💜', {
-                        duration: 3000
+                    const { error } = await supabase
+                      .from('feedback')
+                      .insert({
+                        user_id: user.id,
+                        message: feedback.trim()
                       })
-                    }, 100)
-                  } catch (error) {
-                    console.error('이메일 링크 생성 실패:', error)
-                    // 대체 방법: 이메일 주소와 내용을 클립보드에 복사
-                    const emailText = `이메일: lightyear94122@gmail.com\n제목: Focus Buddy 피드백\n내용:\n${feedback}`
-                    navigator.clipboard.writeText(emailText).then(() => {
-                      toast.success('피드백 내용이 클립보드에 복사되었습니다. 이메일로 보내주세요!', {
-                        duration: 4000
-                      })
+                    
+                    if (error) {
+                      throw error
+                    }
+                    
+                    setFeedback('')
+                    toast.success('피드백이 전송되었습니다! 감사합니다 💜', {
+                      duration: 3000
                     })
+                  } catch (error) {
+                    console.error('피드백 저장 실패:', error)
+                    toast.error('피드백 전송에 실패했습니다. 다시 시도해주세요.')
+                  } finally {
+                    setSendingFeedback(false)
                   }
                 }}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+                disabled={sendingFeedback}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                피드백 전송
+                {sendingFeedback ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    전송 중...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    피드백 전송
+                  </>
+                )}
               </button>
             </div>
           </div>
