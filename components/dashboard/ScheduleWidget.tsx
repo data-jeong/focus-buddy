@@ -7,13 +7,32 @@ import { format, isToday, isTomorrow, addDays, addMonths, isWithinInterval } fro
 import { ko } from 'date-fns/locale'
 import { cardStyles, headerStyles, listItemStyles, emptyStateStyles, badgeStyles, textStyles } from '@/lib/constants/styles'
 
-export default function ScheduleWidget({ initialSchedules }: { initialSchedules: any[] }) {
-  const [schedules, setSchedules] = useState<any[]>([])
+interface Schedule {
+  id: string
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+  all_day?: boolean
+  recurrence?: string
+  recurrence_pattern?: string
+  recurrence_end?: string
+  excluded_dates?: string | string[]
+  color?: string
+  created_at?: string
+  updated_at?: string
+  is_recurring_instance?: boolean
+  original_id?: string
+  instance_date?: string
+}
+
+export default function ScheduleWidget({ initialSchedules }: { initialSchedules: Schedule[] }) {
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const supabase = createClient()
 
   // Generate recurring instances for today
-  const generateTodayRecurringInstances = (schedule: any) => {
-    const instances: any[] = []
+  const generateTodayRecurringInstances = (schedule: Schedule) => {
+    const instances: Schedule[] = []
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     
@@ -29,7 +48,7 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
           ? JSON.parse(schedule.excluded_dates) 
           : schedule.excluded_dates
       }
-    } catch (e) {
+    } catch {
       excludedDates = []
     }
     const recurrenceEnd = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
@@ -88,14 +107,14 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
         is_recurring_instance: true,
         original_id: schedule.id,
         instance_date: todayStr
-      })
+      } as Schedule)
     }
     
     return instances
   }
 
-  const processSchedules = (scheduleData: any[]) => {
-    const allSchedules: any[] = []
+  const processSchedules = (scheduleData: Schedule[]) => {
+    const allSchedules: Schedule[] = []
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const todayEnd = new Date()
@@ -132,7 +151,7 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
         .order('start_time', { ascending: true })
       
       if (data) {
-        const processed = processSchedules(data)
+        const processed = processSchedules(data as Schedule[])
         setSchedules(processed)
       }
     }

@@ -6,7 +6,16 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import ProfileDropdown from './ProfileDropdown'
 
-export default function Header({ user }: { user: any }) {
+interface User {
+  id: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+    avatar_url?: string
+  }
+}
+
+export default function Header({ user }: { user: User }) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)

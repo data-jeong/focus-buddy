@@ -2,12 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Settings, Coffee, MessageSquare, Heart, Github, ExternalLink, Send } from 'lucide-react'
+import { Settings, MessageSquare, Github, ExternalLink, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cardStyles, buttonStyles, headerStyles } from '@/lib/constants/styles'
 
+interface UserSettings {
+  id: string
+  user_id: string
+  theme: string
+  created_at?: string
+  updated_at?: string
+}
+
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<any>(null)
+  const [settings, setSettings] = useState<UserSettings | null>(null)
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [sendingFeedback, setSendingFeedback] = useState(false)
@@ -44,7 +52,7 @@ export default function SettingsPage() {
     }
   }
 
-  const updateSettings = async (updates: any) => {
+  const updateSettings = async (updates: Partial<UserSettings>) => {
     if (!settings) return
     
     setLoading(true)
@@ -87,107 +95,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-8">
-        {/* Developer Support Section */}
-        <section>
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Heart className="h-5 w-5 text-red-500" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                개발자 후원
-              </h2>
-            </div>
-            <p className="text-base text-gray-600 dark:text-gray-300">
-              Focus Buddy 개발을 응원해주세요!
-            </p>
-          </div>
-
-          <div className={cardStyles.full}>
-            <div className="space-y-6">
-              {/* Toonation - 가장 인기있는 한국 후원 플랫폼 */}
-              <div className="text-center pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="p-3 bg-gradient-to-br from-orange-400 to-pink-500 rounded-full">
-                    <Heart className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  투네이션으로 후원하기 🍩
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                  한국에서 가장 많이 사용하는 크리에이터 후원 플랫폼
-                </p>
-                <a
-                  href="https://toon.at/donate/focusbuddy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-medium rounded-lg transition-all transform hover:scale-105"
-                >
-                  <Heart className="h-4 w-4 mr-2" />
-                  투네이션 후원
-                  <ExternalLink className="h-3 w-3 ml-2" />
-                </a>
-              </div>
-
-              {/* Kakao Pay 정기후원 */}
-              <div className="text-center pb-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="p-3 bg-yellow-400 rounded-full">
-                    <svg className="h-8 w-8 text-gray-900" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 3C6.48 3 2 6.58 2 11c0 2.83 1.85 5.33 4.65 6.75-.2.72-.73 2.62-.76 2.74-.05.18.14.32.31.22.21-.12 3.36-2.21 3.57-2.35.63.09 1.28.14 1.95.14 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  카카오페이 정기후원 💛
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                  매월 자동으로 후원하는 정기후원 서비스
-                </p>
-                <a
-                  href="https://qr.kakaopay.com/FocusBuddy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-medium rounded-lg transition-colors"
-                >
-                  카카오페이 정기후원
-                  <ExternalLink className="h-3 w-3 ml-2" />
-                </a>
-              </div>
-
-              {/* GitHub Sponsors */}
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="p-3 bg-gray-900 dark:bg-gray-700 rounded-full">
-                    <Github className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  GitHub 스폰서 💜
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                  개발자를 위한 글로벌 후원 플랫폼 (달러 결제)
-                </p>
-                <a
-                  href="https://github.com/sponsors/yourusername"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-2.5 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
-                >
-                  <Github className="h-4 w-4 mr-2" />
-                  GitHub Sponsors
-                  <ExternalLink className="h-3 w-3 ml-2" />
-                </a>
-              </div>
-
-              {/* 후원 안내 메시지 */}
-              <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                <p className="text-sm text-indigo-700 dark:text-indigo-300 text-center">
-                  💡 모든 후원 플랫폼은 사업자 등록이 되어있어 안전하게 후원하실 수 있습니다
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Feedback Section */}
         <section>

@@ -9,10 +9,24 @@ import { format, parse } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { modalStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
 
+interface Schedule {
+  id?: string
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+  all_day?: boolean
+  recurrence?: string
+  recurrence_end?: string
+  color?: string
+  created_at?: string
+  updated_at?: string
+}
+
 interface ScheduleModalProps {
   open: boolean
   onClose: () => void
-  schedule?: any
+  schedule?: Schedule
   initialDate?: Date
   initialStartTime?: string
   initialEndTime?: string

@@ -7,10 +7,20 @@ import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { modalStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
 
+interface Todo {
+  id?: string
+  title: string
+  description?: string
+  priority: string
+  completed?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
 interface TodoModalProps {
   open: boolean
   onClose: () => void
-  todo?: any
+  todo?: Todo
   onSuccess?: () => void // Callback for successful save
 }
 
