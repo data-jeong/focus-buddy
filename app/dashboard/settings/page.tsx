@@ -152,7 +152,7 @@ export default function SettingsPage() {
                   </p>
                   <a
                     href="mailto:lightyear94122@gmail.com?subject=Focus Buddy 피드백"
-                    className={`inline-flex items-center ${buttonStyles.primary}`}
+                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     이메일 보내기
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                     href="https://github.com/data-jeong/focus-buddy/issues"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center ${buttonStyles.secondary}`}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     <Github className="h-4 w-4 mr-2" />
                     GitHub 방문
@@ -209,14 +209,20 @@ export default function SettingsPage() {
                     toast.error('피드백 내용을 입력해주세요')
                     return
                   }
-                  // 실제로는 이메일로 보내기
-                  window.location.href = `mailto:lightyear94122@gmail.com?subject=Focus Buddy 피드백&body=${encodeURIComponent(feedback)}`
-                  setFeedback('')
-                  toast.success('피드백이 준비되었습니다! 이메일을 보내주세요 💜', {
-                    duration: 3000
-                  })
+                  // 이메일 클라이언트 열기
+                  const subject = encodeURIComponent('Focus Buddy 피드백')
+                  const body = encodeURIComponent(feedback)
+                  const mailtoLink = `mailto:lightyear94122@gmail.com?subject=${subject}&body=${body}`
+                  window.open(mailtoLink, '_self')
+                  
+                  setTimeout(() => {
+                    setFeedback('')
+                    toast.success('피드백이 준비되었습니다! 이메일을 보내주세요 💜', {
+                      duration: 3000
+                    })
+                  }, 500)
                 }}
-                className={buttonStyles.primary}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 피드백 전송
