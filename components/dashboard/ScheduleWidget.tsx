@@ -74,11 +74,19 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
   useEffect(() => {
     // Process initial schedules to include recurring instances
     const allSchedules: any[] = []
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
+    
     initialSchedules.forEach(schedule => {
+      const startTime = new Date(schedule.start_time)
+      
       if (schedule.recurrence && schedule.recurrence !== 'none') {
         const instances = generateTodayRecurringInstances(schedule)
         allSchedules.push(...instances)
-      } else {
+      } else if (isWithinInterval(startTime, { start: todayStart, end: todayEnd })) {
+        // Only show today's non-recurring schedules
         allSchedules.push(schedule)
       }
     })
@@ -132,8 +140,11 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">예정된 일정</h2>
-        <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">오늘 예정된 일정</h2>
+        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+          <Calendar className="h-4 w-4 mr-1" />
+          <span>{format(new Date(), 'MM월 dd일', { locale: ko })}</span>
+        </div>
       </div>
       
       <div className="space-y-3">
@@ -157,16 +168,21 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
                   style={{ backgroundColor: schedule.color }}
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {schedule.title}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {schedule.title}
+                    </p>
+                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                      {format(startTime, 'HH:mm')}
+                    </span>
+                  </div>
                   <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
                     <Clock className="h-3 w-3 mr-1" />
-                    <span>{getDateLabel(startTime)}</span>
-                    <span className="mx-1">•</span>
                     <span>
                       {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
                     </span>
+                    <span className="mx-1">•</span>
+                    <span>{Math.round((endTime.getTime() - startTime.getTime()) / 60000)}분</span>
                   </div>
                   {schedule.description && (
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{schedule.description}</p>

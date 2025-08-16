@@ -569,18 +569,17 @@ export default function SchedulePage() {
                     )}
                     {/* Actions */}
                     <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                      {!schedule.is_recurring_instance && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleScheduleClick(schedule)
-                            }}
-                            className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
-                          >
-                            <Edit className="h-3 w-3 text-white" />
-                          </button>
-                          {isDeleting ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleScheduleClick(schedule)
+                        }}
+                        className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
+                      >
+                        <Edit className="h-3 w-3 text-white" />
+                      </button>
+                      {!schedule.is_recurring_instance ? (
+                        isDeleting ? (
                             <div className="flex space-x-1">
                               <button
                                 onClick={(e) => {
@@ -611,8 +610,18 @@ export default function SchedulePage() {
                             >
                               <Trash2 className="h-3 w-3 text-white" />
                             </button>
-                          )}
-                        </>
+                          )
+                      ) : (
+                        // 반복 일정 인스턴스의 경우에도 삭제 버튼 표시
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteConfirm(schedule.id)
+                          }}
+                          className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3 text-white" />
+                        </button>
                       )}
                     </div>
                     
@@ -680,10 +689,10 @@ export default function SchedulePage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">이번 일정만 삭제</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">이 이벤트만 삭제</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">선택한 날짜의 일정만 삭제합니다</p>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                  <Calendar className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                 </div>
               </button>
               
@@ -697,10 +706,10 @@ export default function SchedulePage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">이후 반복 일정 삭제</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">앞으로 모든 이벤트 삭제</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">오늘 이후의 모든 반복 일정을 삭제합니다</p>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                  <Clock className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
                 </div>
               </button>
               
@@ -710,7 +719,7 @@ export default function SchedulePage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-red-700 dark:text-red-400">모든 반복 일정 삭제</p>
+                    <p className="font-medium text-red-700 dark:text-red-400">모든 이벤트 삭제</p>
                     <p className="text-sm text-red-600 dark:text-red-500 mt-1">과거와 미래의 모든 반복 일정을 삭제합니다</p>
                   </div>
                   <Trash2 className="h-5 w-5 text-red-500 group-hover:text-red-600" />
