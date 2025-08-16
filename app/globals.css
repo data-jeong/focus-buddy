@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 가독성 개선을 위한 스타일 */
+* {
+  font-weight: 500;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+p, span, div {
+  color: #1f2937 !important;
+  line-height: 1.6;
+}
+
+/* 회색 텍스트를 더 진하게 */
+.text-gray-400 {
+  color: #6b7280 !important;
+}
+
+.text-gray-500 {
+  color: #4b5563 !important;
+}
+
+.text-gray-600 {
+  color: #374151 !important;
+}
+
+.text-gray-700 {
+  color: #1f2937 !important;
+}
+
+/* 입력 필드와 버튼 가독성 개선 */
+input, textarea, select {
+  color: #111827 !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+button {
+  font-weight: 600 !important;
+}
+
+/* 작은 텍스트도 더 크고 진하게 */
+.text-xs {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+}
+
+.text-sm {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+/* 링크 가독성 개선 */
+a {
+  font-weight: 600 !important;
+}
+
+/* 다크모드에서도 가독성 유지 */
+@media (prefers-color-scheme: dark) {
+  h1, h2, h3, h4, h5, h6 {
+    color: #f3f4f6 !important;
+  }
+  
+  p, span, div {
+    color: #e5e7eb !important;
+  }
+  
+  .text-gray-400 {
+    color: #9ca3af !important;
+  }
+  
+  .text-gray-500 {
+    color: #d1d5db !important;
+  }
+  
+  .text-gray-600 {
+    color: #e5e7eb !important;
+  }
+  
+  .text-gray-700 {
+    color: #f3f4f6 !important;
+  }
+}
