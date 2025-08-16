@@ -22,50 +22,40 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     const endTime = new Date(schedule.end_time)
     const duration = endTime.getTime() - startTime.getTime()
     
-    let currentDate = new Date(startTime)
-    const maxIterations = 365
-    let iterations = 0
+    // Start from the original date but adjust to today's date with same time
+    let currentDate = new Date(todayStart)
+    currentDate.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0)
     
-    while (currentDate <= todayEnd && iterations < maxIterations) {
-      if (isWithinInterval(currentDate, { start: todayStart, end: todayEnd })) {
-        instances.push({
-          ...schedule,
-          id: `${schedule.id}_${currentDate.getTime()}`,
-          start_time: currentDate.toISOString(),
-          end_time: new Date(currentDate.getTime() + duration).toISOString(),
-          is_recurring_instance: true,
-          original_id: schedule.id
-        })
-      }
-      
-      // Move to next occurrence
+    // Check if the schedule should occur today based on recurrence type
+    const shouldOccurToday = () => {
+      const today = new Date()
       switch (schedule.recurrence) {
         case 'daily':
-          currentDate = addDays(currentDate, 1)
-          break
+          return true
         case 'weekdays':
-          do {
-            currentDate = addDays(currentDate, 1)
-          } while (currentDate.getDay() === 0 || currentDate.getDay() === 6)
-          break
+          return today.getDay() >= 1 && today.getDay() <= 5
         case 'weekends':
-          do {
-            currentDate = addDays(currentDate, 1)
-          } while (currentDate.getDay() !== 0 && currentDate.getDay() !== 6)
-          break
+          return today.getDay() === 0 || today.getDay() === 6
         case 'weekly':
-          currentDate = addDays(currentDate, 7)
-          break
+          return today.getDay() === startTime.getDay()
         case 'monthly':
-          currentDate = addMonths(currentDate, 1)
-          break
+          return today.getDate() === startTime.getDate()
         case 'yearly':
-          currentDate = addMonths(currentDate, 12)
-          break
+          return today.getMonth() === startTime.getMonth() && today.getDate() === startTime.getDate()
         default:
-          return instances
+          return false
       }
-      iterations++
+    }
+    
+    if (shouldOccurToday()) {
+      instances.push({
+        ...schedule,
+        id: `${schedule.id}_${currentDate.getTime()}`,
+        start_time: currentDate.toISOString(),
+        end_time: new Date(currentDate.getTime() + duration).toISOString(),
+        is_recurring_instance: true,
+        original_id: schedule.id
+      })
     }
     
     return instances
@@ -96,6 +86,38 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
   }, [initialSchedules])
 
   useEffect(() => {
+    const fetchAndProcessSchedules = async () => {
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const todayEnd = new Date()
+      todayEnd.setHours(23, 59, 59, 999)
+      
+      const { data } = await supabase
+        .from('schedules')
+        .select('*')
+        .or(`start_time.gte.${todayStart.toISOString()}.lte.${todayEnd.toISOString()},recurrence.neq.none`)
+        .order('start_time', { ascending: true })
+      
+      if (data) {
+        const allSchedules: any[] = []
+        
+        data.forEach(schedule => {
+          const startTime = new Date(schedule.start_time)
+          
+          if (schedule.recurrence && schedule.recurrence !== 'none') {
+            const instances = generateTodayRecurringInstances(schedule)
+            allSchedules.push(...instances)
+          } else if (isWithinInterval(startTime, { start: todayStart, end: todayEnd })) {
+            allSchedules.push(schedule)
+          }
+        })
+        
+        setSchedules(allSchedules.sort((a, b) => 
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        ))
+      }
+    }
+    
     const channel = supabase
       .channel('schedules-changes')
       .on(
@@ -105,18 +127,9 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
           schema: 'public',
           table: 'schedules',
         },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setSchedules(prev => [...prev, payload.new as any].sort((a, b) => 
-              new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-            ))
-          } else if (payload.eventType === 'UPDATE') {
-            setSchedules(prev => prev.map(schedule => 
-              schedule.id === payload.new.id ? payload.new as any : schedule
-            ))
-          } else if (payload.eventType === 'DELETE') {
-            setSchedules(prev => prev.filter(schedule => schedule.id !== payload.old.id))
-          }
+        () => {
+          // Refetch all schedules on any change
+          fetchAndProcessSchedules()
         }
       )
       .subscribe()

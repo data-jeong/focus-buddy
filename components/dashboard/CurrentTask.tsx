@@ -24,7 +24,77 @@ export default function CurrentTask() {
   const [sessionsCompleted, setSessionsCompleted] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const sessionStartTime = useRef<Date | null>(null)
+  const lastSaveTime = useRef<Date>(new Date())
   const supabase = createClient()
+
+  // Load timer state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('timerState')
+    if (savedState) {
+      const state = JSON.parse(savedState)
+      
+      // Calculate time elapsed since last save
+      const now = new Date().getTime()
+      const savedTime = new Date(state.lastSave).getTime()
+      const elapsedSeconds = Math.floor((now - savedTime) / 1000)
+      
+      // Only restore if less than 1 hour has passed
+      if (elapsedSeconds < 3600 && state.isRunning) {
+        // Adjust timeLeft based on elapsed time
+        const adjustedTimeLeft = Math.max(0, state.timeLeft - elapsedSeconds)
+        
+        setSelectedTaskId(state.selectedTaskId)
+        setFocusMode(state.focusMode || FOCUS_MODES[0])
+        setTimeLeft(adjustedTimeLeft)
+        setIsBreak(state.isBreak || false)
+        setSessionTime((state.sessionTime || 0) + elapsedSeconds)
+        setTotalFocusTime(state.totalFocusTime || 0)
+        setSessionsCompleted(state.sessionsCompleted || 0)
+        
+        // Resume if was running and time not expired
+        if (adjustedTimeLeft > 0) {
+          setIsRunning(true)
+          sessionStartTime.current = new Date(savedTime)
+        }
+      } else if (!state.isRunning) {
+        // Restore state without adjusting time
+        setSelectedTaskId(state.selectedTaskId)
+        setFocusMode(state.focusMode || FOCUS_MODES[0])
+        setTimeLeft(state.timeLeft)
+        setIsBreak(state.isBreak || false)
+        setSessionTime(state.sessionTime || 0)
+        setTotalFocusTime(state.totalFocusTime || 0)
+        setSessionsCompleted(state.sessionsCompleted || 0)
+      }
+    }
+  }, [])
+
+  // Save timer state to localStorage
+  useEffect(() => {
+    const saveState = () => {
+      const state = {
+        selectedTaskId,
+        focusMode,
+        timeLeft,
+        isRunning,
+        isBreak,
+        sessionTime,
+        totalFocusTime,
+        sessionsCompleted,
+        lastSave: new Date().toISOString()
+      }
+      localStorage.setItem('timerState', JSON.stringify(state))
+      lastSaveTime.current = new Date()
+    }
+
+    // Save state every second when running, or on any state change
+    if (isRunning) {
+      const saveInterval = setInterval(saveState, 1000)
+      return () => clearInterval(saveInterval)
+    } else {
+      saveState()
+    }
+  }, [selectedTaskId, focusMode, timeLeft, isRunning, isBreak, sessionTime, totalFocusTime, sessionsCompleted])
 
   useEffect(() => {
     fetchTodos()

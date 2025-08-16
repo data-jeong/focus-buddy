@@ -616,7 +616,12 @@ export default function SchedulePage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            setDeleteConfirm(schedule.id)
+                            // 반복 일정 인스턴스일 때 바로 모달 열기
+                            if (schedule.is_recurring_instance) {
+                              setRecurringDeleteModal({ open: true, scheduleId: schedule.original_id })
+                            } else {
+                              setDeleteConfirm(schedule.id)
+                            }
                           }}
                           className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
                         >

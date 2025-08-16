@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -24,6 +24,18 @@ export default function Sidebar() {
   const supabase = createClient()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    // Adjust main content margin when sidebar collapses
+    const mainContent = document.getElementById('main-content')
+    if (mainContent) {
+      if (isCollapsed) {
+        mainContent.className = 'lg:pl-20 transition-all duration-300'
+      } else {
+        mainContent.className = 'lg:pl-64 transition-all duration-300'
+      }
+    }
+  }, [isCollapsed])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
