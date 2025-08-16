@@ -1,11 +1,10 @@
 'use client'
 
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Loader2, Sparkles, Brain, Target, Clock } from 'lucide-react'
+import AuthForm from '@/components/auth/AuthForm'
 
 export default function AuthPage() {
   const supabase = createClient()
@@ -78,44 +77,9 @@ export default function AuthPage() {
         
         {/* 로그인 폼 */}
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-          <Auth
-            supabaseClient={supabase}
+          <AuthForm
             onSubmit={() => setIsLoading(true)}
             redirectTo={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`}
-            appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: '#4F46E5',
-                  brandAccent: '#4338CA',
-                },
-              },
-            },
-          }}
-          localization={{
-            variables: {
-              sign_in: {
-                email_label: '이메일',
-                password_label: '비밀번호',
-                button_label: '로그인',
-                loading_button_label: '로그인 중...',
-                social_provider_text: '{{provider}}로 로그인',
-                link_text: '이미 계정이 있으신가요? 로그인',
-              },
-              sign_up: {
-                email_label: '이메일',
-                password_label: '비밀번호',
-                button_label: '회원가입',
-                loading_button_label: '가입 중...',
-                social_provider_text: '{{provider}}로 가입',
-                link_text: '계정이 없으신가요? 회원가입',
-                confirmation_text: '확인 이메일을 확인해주세요',
-              },
-            },
-          }}
-          providers={[]}
-          view="sign_in"
           />
         </div>
         

@@ -1,6 +1,6 @@
 # Focus Buddy 🎯
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
+[![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -9,7 +9,7 @@
 
 ## 🚀 Live Demo
 
-[https://focus-buddy.vercel.app](https://focus-buddy.vercel.app)
+[https://focus-buddy-navy.vercel.app](https://focus-buddy-navy.vercel.app)
 
 ## ✨ 주요 기능
 
@@ -39,6 +39,9 @@
 - 📱 반응형 디자인 (모바일/태블릿/데스크톱)
 - 💾 실시간 데이터 동기화
 - 🔐 안전한 사용자 인증
+- 📧 이메일 인증 재발송 기능
+- 👁️ 비밀번호 표시/숨김 토글
+- 🔄 60초 재발송 쿨다운
 
 ## 🛠️ 기술 스택
 
