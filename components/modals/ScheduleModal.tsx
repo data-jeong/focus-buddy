@@ -49,14 +49,60 @@ export default function ScheduleModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
-  const [startHour, setStartHour] = useState('09')
-  const [startMinute, setStartMinute] = useState('00')
-  const [endHour, setEndHour] = useState('10')
-  const [endMinute, setEndMinute] = useState('00')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('10:00')
   const [color, setColor] = useState(COLORS[0])
   const [recurrence, setRecurrence] = useState('none')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+  
+  // Validate time format and adjust if needed
+  const validateTime = (time: string): string => {
+    // Remove all non-digit characters except colon
+    let cleaned = time.replace(/[^\d:]/g, '')
+    
+    // If no colon, try to format as HH:MM
+    if (!cleaned.includes(':')) {
+      if (cleaned.length === 1) {
+        cleaned = `0${cleaned}:00`
+      } else if (cleaned.length === 2) {
+        cleaned = `${cleaned}:00`
+      } else if (cleaned.length === 3) {
+        cleaned = `0${cleaned[0]}:${cleaned.slice(1)}`
+      } else if (cleaned.length >= 4) {
+        cleaned = `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`
+      }
+    }
+    
+    // Parse and validate
+    const parts = cleaned.split(':')
+    if (parts.length !== 2) return '00:00'
+    
+    let hours = parseInt(parts[0]) || 0
+    let minutes = parseInt(parts[1]) || 0
+    
+    // Clamp values
+    hours = Math.min(23, Math.max(0, hours))
+    minutes = Math.min(59, Math.max(0, minutes))
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  }
+  
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartTime(e.target.value)
+  }
+  
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndTime(e.target.value)
+  }
+  
+  const handleTimeBlur = (type: 'start' | 'end') => {
+    if (type === 'start') {
+      setStartTime(validateTime(startTime))
+    } else {
+      setEndTime(validateTime(endTime))
+    }
+  }
 
   useEffect(() => {
     if (schedule) {
@@ -65,10 +111,8 @@ export default function ScheduleModal({
       const scheduleStart = new Date(schedule.start_time)
       const scheduleEnd = new Date(schedule.end_time)
       setDate(format(scheduleStart, 'yyyy-MM-dd'))
-      setStartHour(format(scheduleStart, 'HH'))
-      setStartMinute(format(scheduleStart, 'mm'))
-      setEndHour(format(scheduleEnd, 'HH'))
-      setEndMinute(format(scheduleEnd, 'mm'))
+      setStartTime(format(scheduleStart, 'HH:mm'))
+      setEndTime(format(scheduleEnd, 'HH:mm'))
       setColor(schedule.color || COLORS[0])
       setRecurrence(schedule.recurrence || 'none')
     } else {
@@ -85,28 +129,11 @@ export default function ScheduleModal({
         setDate(format(new Date(), 'yyyy-MM-dd'))
       }
       
-      if (initialStartTime) {
-        const [h, m] = initialStartTime.split(':')
-        setStartHour(h)
-        setStartMinute(m)
-      } else {
-        setStartHour('09')
-        setStartMinute('00')
-      }
-      
-      if (initialEndTime) {
-        const [h, m] = initialEndTime.split(':')
-        setEndHour(h)
-        setEndMinute(m)
-      } else {
-        setEndHour('10')
-        setEndMinute('00')
-      }
+      setStartTime(initialStartTime || '09:00')
+      setEndTime(initialEndTime || '10:00')
     }
   }, [schedule, open, initialDate, initialStartTime, initialEndTime])
 
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-  const minutes = ['00', '15', '30', '45']
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,9 +147,13 @@ export default function ScheduleModal({
       return
     }
 
+    // Validate times before submission
+    const validatedStartTime = validateTime(startTime)
+    const validatedEndTime = validateTime(endTime)
+    
     // Combine date and time
-    const startDateTime = new Date(`${date}T${startHour}:${startMinute}:00`)
-    const endDateTime = new Date(`${date}T${endHour}:${endMinute}:00`)
+    const startDateTime = new Date(`${date}T${validatedStartTime}:00`)
+    const endDateTime = new Date(`${date}T${validatedEndTime}:00`)
 
     if (endDateTime <= startDateTime) {
       toast.error('종료 시간은 시작 시간보다 늦어야 합니다')
@@ -130,8 +161,7 @@ export default function ScheduleModal({
     }
 
     // Check if end time goes past 23:30
-    const endHours = parseInt(endHour)
-    const endMinutes = parseInt(endMinute)
+    const [endHours, endMinutes] = validatedEndTime.split(':').map(n => parseInt(n))
     if (endHours > 23 || (endHours === 23 && endMinutes > 30)) {
       toast.error('일정은 23:30을 넘길 수 없습니다')
       return
@@ -255,54 +285,34 @@ export default function ScheduleModal({
                   <Clock className="inline h-4 w-4 mr-1" />
                   시작 시간
                 </label>
-                <div className="flex items-center space-x-2">
-                  <select
-                    value={startHour}
-                    onChange={(e) => setStartHour(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    {hours.map(h => (
-                      <option key={h} value={h}>{h}시</option>
-                    ))}
-                  </select>
-                  <span className="text-gray-500 dark:text-gray-400">:</span>
-                  <select
-                    value={startMinute}
-                    onChange={(e) => setStartMinute(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    {minutes.map(m => (
-                      <option key={m} value={m}>{m}분</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  value={startTime}
+                  onChange={handleStartTimeChange}
+                  onBlur={() => handleTimeBlur('start')}
+                  placeholder="09:00"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  예: 09:00, 930, 9시30분
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Clock className="inline h-4 w-4 mr-1" />
                   종료 시간
                 </label>
-                <div className="flex items-center space-x-2">
-                  <select
-                    value={endHour}
-                    onChange={(e) => setEndHour(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    {hours.map(h => (
-                      <option key={h} value={h}>{h}시</option>
-                    ))}
-                  </select>
-                  <span className="text-gray-500 dark:text-gray-400">:</span>
-                  <select
-                    value={endMinute}
-                    onChange={(e) => setEndMinute(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    {minutes.map(m => (
-                      <option key={m} value={m}>{m}분</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  value={endTime}
+                  onChange={handleEndTimeChange}
+                  onBlur={() => handleTimeBlur('end')}
+                  placeholder="10:00"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  예: 10:00, 1030, 10시30분
+                </p>
               </div>
             </div>
 
