@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from 'date-fns'
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, setHours, setMinutes } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import ScheduleModal from '@/components/modals/ScheduleModal'
+import toast from 'react-hot-toast'
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -15,6 +16,13 @@ export default function SchedulePage() {
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState<{ day: number; hour: number } | null>(null)
+  const [dragEnd, setDragEnd] = useState<{ day: number; hour: number } | null>(null)
+  const [modalInitialDate, setModalInitialDate] = useState<Date | undefined>()
+  const [modalInitialStartTime, setModalInitialStartTime] = useState<string | undefined>()
+  const [modalInitialEndTime, setModalInitialEndTime] = useState<string | undefined>()
+  const gridRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -77,39 +85,139 @@ export default function SchedulePage() {
   const handleModalClose = () => {
     setModalOpen(false)
     setSelectedSchedule(null)
+    setModalInitialDate(undefined)
+    setModalInitialStartTime(undefined)
+    setModalInitialEndTime(undefined)
     fetchSchedules()
+  }
+
+  const getCellPosition = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!gridRef.current) return null
+    
+    const rect = gridRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    const cellWidth = rect.width / 7
+    const cellHeight = 60
+    
+    const day = Math.floor(x / cellWidth)
+    const hourFloat = y / cellHeight
+    const hour = Math.floor(hourFloat)
+    const minutes = Math.round((hourFloat - hour) * 60 / 15) * 15 // Round to 15 min intervals
+    
+    return { 
+      day: Math.max(0, Math.min(6, day)), 
+      hour: Math.max(0, Math.min(23, hour)),
+      minutes: Math.min(45, minutes)
+    }
+  }
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const position = getCellPosition(e)
+    if (!position) return
+    
+    setIsDragging(true)
+    setDragStart(position)
+    setDragEnd(position)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !dragStart) return
+    
+    const position = getCellPosition(e)
+    if (!position) return
+    
+    setDragEnd(position)
+  }
+
+  const handleMouseUp = () => {
+    if (!isDragging || !dragStart || !dragEnd) {
+      setIsDragging(false)
+      setDragStart(null)
+      setDragEnd(null)
+      return
+    }
+    
+    const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 })
+    const startDate = addDays(weekStart, dragStart.day)
+    const endDate = addDays(weekStart, dragEnd.day)
+    
+    // Ensure start is before end
+    const startHour = Math.min(dragStart.hour, dragEnd.hour)
+    const endHour = Math.max(dragStart.hour, dragEnd.hour)
+    const startMinutes = dragStart.hour < dragEnd.hour ? dragStart.minutes : dragEnd.minutes
+    const endMinutes = dragStart.hour < dragEnd.hour ? dragEnd.minutes : dragStart.minutes
+    
+    // If same hour, ensure at least 30 minutes duration
+    const finalEndHour = startHour === endHour ? endHour + 1 : endHour
+    const finalEndMinutes = startHour === endHour ? 0 : endMinutes
+    
+    setModalInitialDate(startDate)
+    setModalInitialStartTime(`${String(startHour).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`)
+    setModalInitialEndTime(`${String(finalEndHour).padStart(2, '0')}:${String(finalEndMinutes).padStart(2, '0')}`)
+    setModalOpen(true)
+    
+    setIsDragging(false)
+    setDragStart(null)
+    setDragEnd(null)
+  }
+
+  const getDragSelectionStyle = () => {
+    if (!isDragging || !dragStart || !dragEnd) return null
+    
+    const minDay = Math.min(dragStart.day, dragEnd.day)
+    const maxDay = Math.max(dragStart.day, dragEnd.day)
+    const minHour = Math.min(dragStart.hour, dragEnd.hour)
+    const maxHour = Math.max(dragStart.hour, dragEnd.hour)
+    const minMinutes = dragStart.hour < dragEnd.hour ? dragStart.minutes : dragEnd.minutes
+    const maxMinutes = dragStart.hour < dragEnd.hour ? dragEnd.minutes : dragStart.minutes
+    
+    const duration = maxHour - minHour + (maxMinutes - minMinutes) / 60
+    const finalDuration = Math.max(0.5, duration) // Minimum 30 minutes
+    
+    return {
+      left: `${(minDay * 100) / 7}%`,
+      top: `${minHour * 60 + minMinutes}px`,
+      width: `${((maxDay - minDay + 1) * 100) / 7}%`,
+      height: `${finalDuration * 60}px`,
+      backgroundColor: 'rgba(99, 102, 241, 0.2)',
+      border: '2px dashed #6366F1',
+      pointerEvents: 'none' as const,
+      zIndex: 100,
+    }
   }
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 })
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">시간표</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">시간표</h1>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {format(weekStart, 'yyyy년 MM월 d일', { locale: ko })} - 
                 {format(addDays(weekStart, 6), ' MM월 d일', { locale: ko })}
               </span>
               <button
                 onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
             <button
               onClick={() => setCurrentWeek(new Date())}
-              className="px-3 py-1 text-sm bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100"
+              className="px-3 py-1 text-sm bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
             >
               오늘
             </button>
@@ -128,11 +236,11 @@ export default function SchedulePage() {
       <div className="flex">
         {/* Time labels */}
         <div className="w-16 flex-shrink-0">
-          <div className="h-12 border-b border-gray-200"></div>
+          <div className="h-12 border-b border-gray-200 dark:border-gray-700"></div>
           {HOURS.map((hour) => (
             <div
               key={hour}
-              className="h-[60px] border-b border-gray-100 px-2 py-1 text-xs text-gray-500"
+              className="h-[60px] border-b border-gray-100 dark:border-gray-700 px-2 py-1 text-xs text-gray-500 dark:text-gray-400"
             >
               {hour.toString().padStart(2, '0')}:00
             </div>
@@ -142,7 +250,7 @@ export default function SchedulePage() {
         {/* Calendar */}
         <div className="flex-1 relative">
           {/* Day headers */}
-          <div className="grid grid-cols-7 border-b border-gray-200">
+          <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
             {DAYS.map((day, index) => {
               const date = addDays(weekStart, index)
               const isToday = isSameDay(date, new Date())
@@ -150,13 +258,13 @@ export default function SchedulePage() {
               return (
                 <div
                   key={day}
-                  className={`h-12 px-2 py-1 text-center border-l border-gray-200 ${
-                    isToday ? 'bg-indigo-50' : ''
+                  className={`h-12 px-2 py-1 text-center border-l border-gray-200 dark:border-gray-700 ${
+                    isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
                   }`}
                 >
-                  <div className="text-xs text-gray-500">{day}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{day}</div>
                   <div className={`text-sm font-medium ${
-                    isToday ? 'text-indigo-600' : 'text-gray-900'
+                    isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-gray-100'
                   }`}>
                     {format(date, 'd')}
                   </div>
@@ -166,20 +274,36 @@ export default function SchedulePage() {
           </div>
 
           {/* Grid */}
-          <div className="relative">
+          <div 
+            ref={gridRef}
+            className="relative select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            style={{ cursor: isDragging ? 'crosshair' : 'default' }}
+          >
             {/* Hour rows */}
             {HOURS.map((hour) => (
-              <div key={hour} className="h-[60px] border-b border-gray-100">
+              <div key={hour} className="h-[60px] border-b border-gray-100 dark:border-gray-700">
                 <div className="grid grid-cols-7 h-full">
                   {DAYS.map((_, dayIndex) => (
                     <div
                       key={dayIndex}
-                      className="border-l border-gray-200"
+                      className="border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                     />
                   ))}
                 </div>
               </div>
             ))}
+
+            {/* Drag selection preview */}
+            {isDragging && (
+              <div 
+                className="absolute rounded-lg"
+                style={getDragSelectionStyle() || {}}
+              />
+            )}
 
             {/* Schedules */}
             {schedules.map((schedule) => {
@@ -213,6 +337,9 @@ export default function SchedulePage() {
         open={modalOpen}
         onClose={handleModalClose}
         schedule={selectedSchedule}
+        initialDate={modalInitialDate}
+        initialStartTime={modalInitialStartTime}
+        initialEndTime={modalInitialEndTime}
       />
     </div>
   )

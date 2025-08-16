@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Calendar, Bell, Brain } from 'lucide-react'
+import { Plus, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import TodoModal from '@/components/modals/TodoModal'
 import ScheduleModal from '@/components/modals/ScheduleModal'
@@ -22,23 +22,11 @@ export default function QuickActions() {
       onClick: () => setScheduleModalOpen(true),
       color: 'bg-green-500 hover:bg-green-600',
     },
-    {
-      icon: Bell,
-      label: '알림 설정',
-      onClick: () => {},
-      color: 'bg-yellow-500 hover:bg-yellow-600',
-    },
-    {
-      icon: Brain,
-      label: '집중 모드',
-      onClick: () => {},
-      color: 'bg-purple-500 hover:bg-purple-600',
-    },
   ]
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {actions.map((action, index) => {
           const Icon = action.icon
           return (

@@ -130,11 +130,11 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">알림 센터</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">알림 센터</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               예정된 일정과 할 일 마감을 확인하세요
             </p>
           </div>
@@ -151,19 +151,19 @@ export default function NotificationsPage() {
       {settings && (
         <div className={`rounded-xl p-4 ${
           settings.notifications_enabled 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-gray-50 border border-gray-200'
+            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' 
+            : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
         }`}>
           <div className="flex items-center space-x-3">
             {settings.notifications_enabled ? (
               <>
-                <Bell className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-green-700">알림이 활성화되어 있습니다</span>
+                <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <span className="text-sm text-green-700 dark:text-green-300">알림이 활성화되어 있습니다</span>
               </>
             ) : (
               <>
-                <BellOff className="h-5 w-5 text-gray-600" />
-                <span className="text-sm text-gray-700">알림이 비활성화되어 있습니다</span>
+                <BellOff className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">알림이 비활성화되어 있습니다</span>
               </>
             )}
           </div>
@@ -171,14 +171,14 @@ export default function NotificationsPage() {
       )}
 
       {/* Upcoming Notifications */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200 p-4">
-          <h2 className="text-lg font-medium text-gray-900">예정된 알림</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">예정된 알림</h2>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+              <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p>예정된 알림이 없습니다</p>
             </div>
           ) : (
@@ -188,25 +188,25 @@ export default function NotificationsPage() {
               const isWithinHour = notificationTime.getTime() - Date.now() < 60 * 60 * 1000
               
               return (
-                <div key={notification.id} className="p-4 hover:bg-gray-50">
+                <div key={notification.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <div className="flex items-start space-x-3">
                     <div className={`p-2 rounded-lg ${notification.bgColor}`}>
                       <Icon className={`h-5 w-5 ${notification.color}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {notification.title}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {notification.message}
                       </p>
-                      <div className="flex items-center mt-2 text-xs text-gray-500">
+                      <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
                         <Clock className="h-3 w-3 mr-1" />
                         <span className={isWithinHour ? 'text-red-600 font-medium' : ''}>
                           {format(notificationTime, 'MM월 dd일 HH:mm', { locale: ko })}
                         </span>
                         {isWithinHour && (
-                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded">
+                          <span className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
                             곧 시작
                           </span>
                         )}
