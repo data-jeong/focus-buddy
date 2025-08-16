@@ -98,6 +98,25 @@ export default function ScheduleModal({
     return timeRegex.test(time)
   }
 
+  const formatTimeInput = (value: string): string => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '')
+    
+    // Format as HH:MM
+    if (digits.length <= 2) {
+      return digits
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}:${digits.slice(2)}`
+    } else {
+      return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`
+    }
+  }
+
+  const handleTimeChange = (value: string, setter: (val: string) => void) => {
+    const formatted = formatTimeInput(value)
+    setter(formatted)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) {
@@ -257,10 +276,10 @@ export default function ScheduleModal({
                 <input
                   type="text"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleTimeChange(e.target.value, setStartTime)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="09:00"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
+                  placeholder="0900"
+                  maxLength={5}
                 />
               </div>
               <div>
@@ -271,10 +290,10 @@ export default function ScheduleModal({
                 <input
                   type="text"
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onChange={(e) => handleTimeChange(e.target.value, setEndTime)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="10:00"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
+                  placeholder="1000"
+                  maxLength={5}
                 />
               </div>
             </div>

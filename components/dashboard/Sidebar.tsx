@@ -28,7 +28,9 @@ export default function Sidebar() {
     <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
       <div className="flex flex-col flex-grow bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
         <div className="flex items-center flex-shrink-0 px-6 py-4">
-          <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">Focus Buddy</h1>
+          <Link href="/dashboard" className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+            Focus Buddy
+          </Link>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navigation.map((item) => {

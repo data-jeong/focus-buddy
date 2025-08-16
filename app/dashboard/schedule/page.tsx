@@ -342,24 +342,25 @@ export default function SchedulePage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Time labels */}
-        <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="h-12 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10"></div>
-          <div>
-            {HOURS.map((hour) => (
-              <div
-                key={hour}
-                className="h-[60px] border-b border-gray-100 dark:border-gray-700/50 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 text-right"
-              >
-                {hour === 0 ? '자정' : hour === 12 ? '정오' : `${hour.toString().padStart(2, '0')}:00`}
-              </div>
-            ))}
+      <div ref={scrollContainerRef} className="flex flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex flex-1">
+          {/* Time labels */}
+          <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="h-12 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10"></div>
+            <div>
+              {HOURS.map((hour) => (
+                <div
+                  key={hour}
+                  className="h-[60px] border-b border-gray-100 dark:border-gray-700/50 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 text-right"
+                >
+                  {hour === 0 ? '자정' : hour === 12 ? '정오' : `${hour.toString().padStart(2, '0')}:00`}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Calendar */}
-        <div ref={scrollContainerRef} className="flex-1 relative overflow-y-auto">
+          {/* Calendar */}
+          <div className="flex-1 relative">
           {/* Day headers - Sticky */}
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
             {DAYS.map((day, index) => {
