@@ -10,9 +10,10 @@ interface TodoModalProps {
   open: boolean
   onClose: () => void
   todo?: any
+  onSuccess?: () => void // Callback for successful save
 }
 
-export default function TodoModal({ open, onClose, todo }: TodoModalProps) {
+export default function TodoModal({ open, onClose, todo, onSuccess }: TodoModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
@@ -56,18 +57,23 @@ export default function TodoModal({ open, onClose, todo }: TodoModalProps) {
       }
 
       if (todo) {
-        await supabase
+        const { error } = await supabase
           .from('todos')
           .update(todoData)
           .eq('id', todo.id)
+        
+        if (error) throw error
         toast.success('할 일이 수정되었습니다')
       } else {
-        await supabase
+        const { error } = await supabase
           .from('todos')
           .insert([todoData])
+        
+        if (error) throw error
         toast.success('할 일이 추가되었습니다')
       }
 
+      onSuccess?.() // Call success callback if provided
       onClose()
     } catch (error) {
       toast.error('오류가 발생했습니다')

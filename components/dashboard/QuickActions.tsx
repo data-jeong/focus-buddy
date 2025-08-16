@@ -14,6 +14,42 @@ export default function QuickActions() {
 
   useEffect(() => {
     fetchStats()
+    
+    // Set up realtime subscriptions for both todos and schedules
+    const todosChannel = supabase
+      .channel('quickactions-todos')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'todos',
+        },
+        () => {
+          fetchStats() // Re-fetch stats when todos change
+        }
+      )
+      .subscribe()
+    
+    const schedulesChannel = supabase
+      .channel('quickactions-schedules')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'schedules',
+        },
+        () => {
+          fetchStats() // Re-fetch stats when schedules change
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(todosChannel)
+      supabase.removeChannel(schedulesChannel)
+    }
   }, [])
 
   const fetchStats = async () => {
@@ -189,8 +225,20 @@ export default function QuickActions() {
         </div>
       </div>
       
-      <TodoModal open={todoModalOpen} onClose={() => setTodoModalOpen(false)} />
-      <ScheduleModal open={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} />
+      <TodoModal 
+        open={todoModalOpen} 
+        onClose={() => {
+          setTodoModalOpen(false)
+          fetchStats() // Re-fetch stats after modal closes
+        }} 
+      />
+      <ScheduleModal 
+        open={scheduleModalOpen} 
+        onClose={() => {
+          setScheduleModalOpen(false)
+          fetchStats() // Re-fetch stats after modal closes
+        }} 
+      />
     </>
   )
 }

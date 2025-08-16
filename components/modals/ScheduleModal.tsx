@@ -15,6 +15,7 @@ interface ScheduleModalProps {
   initialDate?: Date
   initialStartTime?: string
   initialEndTime?: string
+  onSuccess?: () => void // Callback for successful save
 }
 
 const COLORS = [
@@ -44,7 +45,8 @@ export default function ScheduleModal({
   schedule,
   initialDate,
   initialStartTime,
-  initialEndTime 
+  initialEndTime,
+  onSuccess 
 }: ScheduleModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -198,6 +200,7 @@ export default function ScheduleModal({
         toast.error(`일정 수정 실패: ${error.message}`)
       } else {
         toast.success('일정이 수정되었습니다')
+        onSuccess?.() // Call success callback if provided
         onClose()
       }
     } else {
@@ -211,6 +214,7 @@ export default function ScheduleModal({
         toast.error(`일정 추가 실패: ${error.message}`)
       } else {
         toast.success('일정이 추가되었습니다')
+        onSuccess?.() // Call success callback if provided
         onClose()
       }
     }

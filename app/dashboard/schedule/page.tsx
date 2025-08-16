@@ -312,7 +312,11 @@ export default function SchedulePage() {
     setModalInitialDate(undefined)
     setModalInitialStartTime(undefined)
     setModalInitialEndTime(undefined)
-    fetchSchedules() // Re-render after save/close
+    // fetchSchedules will be called automatically by realtime subscription
+  }
+  
+  const handleModalSuccess = () => {
+    fetchSchedules() // Immediately fetch after successful save
   }
 
   const getCellPosition = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -727,6 +731,7 @@ export default function SchedulePage() {
         initialDate={modalInitialDate}
         initialStartTime={modalInitialStartTime}
         initialEndTime={modalInitialEndTime}
+        onSuccess={handleModalSuccess}
       />
 
       {/* Regular Schedule Delete Confirmation Modal */}

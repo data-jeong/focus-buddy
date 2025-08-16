@@ -111,7 +111,11 @@ export default function TodosPage() {
   const handleModalClose = () => {
     setModalOpen(false)
     setSelectedTodo(null)
-    fetchTodos() // Re-render after save
+    // fetchTodos will be called automatically by realtime subscription
+  }
+  
+  const handleModalSuccess = () => {
+    fetchTodos() // Immediately fetch after successful save
   }
 
   const getPriorityColor = (priority: string) => {
@@ -338,6 +342,7 @@ export default function TodosPage() {
         open={modalOpen}
         onClose={handleModalClose}
         todo={selectedTodo}
+        onSuccess={handleModalSuccess}
       />
 
       {/* Delete Confirmation Modal */}
