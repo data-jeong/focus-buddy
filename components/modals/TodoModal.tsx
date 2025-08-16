@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { modalStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
@@ -162,9 +162,14 @@ export default function TodoModal({ open, onClose, todo, onSuccess }: TodoModalP
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex-1 ${buttonStyles.primary}`}
+                className={`flex-1 ${buttonStyles.primary} flex items-center justify-center`}
               >
-                {loading ? '처리 중...' : todo ? '수정하기' : '저장하기'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    처리 중...
+                  </>
+                ) : todo ? '수정하기' : '저장하기'}
               </button>
             </div>
           </form>

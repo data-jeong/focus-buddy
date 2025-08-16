@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit, CheckSquare } from 'lucide-react'
+import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit, CheckSquare, Loader2 } from 'lucide-react'
 import TodoModal from '@/components/modals/TodoModal'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'

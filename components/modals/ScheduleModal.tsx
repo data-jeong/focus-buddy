@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Calendar, Clock, Repeat, Palette } from 'lucide-react'
+import { X, Calendar, Clock, Repeat, Palette, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format, parse } from 'date-fns'
@@ -391,9 +391,14 @@ export default function ScheduleModal({
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex-1 ${buttonStyles.primary}`}
+                className={`flex-1 ${buttonStyles.primary} flex items-center justify-center`}
               >
-                {loading ? '저장 중...' : (schedule ? '수정' : '추가')}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    저장 중...
+                  </>
+                ) : (schedule ? '수정' : '추가')}
               </button>
             </div>
           </form>
