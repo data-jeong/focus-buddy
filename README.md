@@ -1,6 +1,6 @@
 # Focus Buddy 🎯
 
-[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
+[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -100,14 +100,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 # supabase/migrations/ 폴더의 SQL 파일들을 순서대로 실행
 ```
 
-### 5. 개발 서버 실행
+### 5. Supabase 이메일 설정 (프로덕션)
+Supabase Dashboard에서:
+1. **Authentication → URL Configuration**로 이동
+2. **Site URL**: 프로덕션 URL 입력 (예: `https://focus-buddy-navy.vercel.app`)
+3. **Redirect URLs**에 추가:
+   - `https://your-domain.com/**`
+   - `https://your-domain.com/auth/callback`
+
+### 6. 개발 서버 실행
 ```bash
 npm run dev
 # 또는
 yarn dev
 ```
 
-[http://localhost:3000](http://localhost:3000)에서 확인 가능합니다.
+로컬 개발: [http://localhost:3000](http://localhost:3000)
+프로덕션: [https://focus-buddy-navy.vercel.app](https://focus-buddy-navy.vercel.app)
 
 ## 📁 프로젝트 구조
 
