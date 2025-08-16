@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calendar, CheckSquare, Settings, Bell, BarChart3, LogOut, Target } from 'lucide-react'
+import { Calendar, CheckSquare, Settings, Bell, BarChart3, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -10,7 +10,6 @@ const navigation = [
   { name: '대시보드', href: '/dashboard', icon: BarChart3 },
   { name: '할 일', href: '/dashboard/todos', icon: CheckSquare },
   { name: '시간표', href: '/dashboard/schedule', icon: Calendar },
-  { name: '포커스', href: '/dashboard/focus', icon: Target },
   { name: '알림', href: '/dashboard/notifications', icon: Bell },
   { name: '설정', href: '/dashboard/settings', icon: Settings },
 ]

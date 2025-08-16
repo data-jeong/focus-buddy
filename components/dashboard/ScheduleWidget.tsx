@@ -48,15 +48,15 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">예정된 일정</h2>
-        <Calendar className="h-5 w-5 text-gray-400" />
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">예정된 일정</h2>
+        <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500" />
       </div>
       
       <div className="space-y-3">
         {schedules.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">예정된 일정이 없습니다</p>
+          <p className="text-gray-500 dark:text-gray-400 text-center py-8">예정된 일정이 없습니다</p>
         ) : (
           schedules.map((schedule) => {
             const startTime = new Date(schedule.start_time)
@@ -65,17 +65,17 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
             return (
               <div
                 key={schedule.id}
-                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div
                   className="w-1 h-full rounded-full flex-shrink-0"
                   style={{ backgroundColor: schedule.color }}
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {schedule.title}
                   </p>
-                  <div className="flex items-center mt-1 text-xs text-gray-500">
+                  <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
                     <Clock className="h-3 w-3 mr-1" />
                     <span>{getDateLabel(startTime)}</span>
                     <span className="mx-1">•</span>
@@ -84,14 +84,9 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
                     </span>
                   </div>
                   {schedule.description && (
-                    <p className="text-xs text-gray-600 mt-1">{schedule.description}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{schedule.description}</p>
                   )}
                 </div>
-                {schedule.google_event_id && (
-                  <div className="flex-shrink-0">
-                    <img src="/google-calendar-icon.svg" alt="Google Calendar" className="h-4 w-4" />
-                  </div>
-                )}
               </div>
             )
           })
