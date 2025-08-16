@@ -2,23 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Bell, Settings, BellOff, Check } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { registerServiceWorker, subscribeToPushNotifications, requestNotificationPermission } from '@/lib/push-notifications'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const supabase = createClient()
 
   useEffect(() => {
     fetchSettings()
-    
-    // Check notification permission
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission)
-    }
   }, [])
 
   const fetchSettings = async () => {
@@ -37,7 +30,6 @@ export default function SettingsPage() {
         .from('user_settings')
         .insert([{
           user_id: user.id,
-          notifications_enabled: false,
           theme: 'dark',
         }])
         .select()
@@ -70,26 +62,6 @@ export default function SettingsPage() {
     setLoading(false)
   }
 
-  const handleNotificationToggle = async () => {
-    if (!settings) return
-
-    if (!settings.notifications_enabled) {
-      // Enable notifications
-      const permission = await requestNotificationPermission()
-      if (permission) {
-        await registerServiceWorker()
-        await subscribeToPushNotifications()
-        await updateSettings({ notifications_enabled: true })
-        setNotificationPermission('granted')
-      } else {
-        toast.error('알림 권한이 거부되었습니다')
-      }
-    } else {
-      // Disable notifications
-      await updateSettings({ notifications_enabled: false })
-    }
-  }
-
   if (!settings) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -112,95 +84,25 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-8">
-        {/* Notifications Section */}
+        {/* Theme Settings Section */}
         <section>
           <div className="mb-6">
             <div className="flex items-center space-x-2 mb-2">
-              <Bell className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <Settings className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                알림 설정
+                일반 설정
               </h2>
             </div>
             <p className="text-base text-gray-600 dark:text-gray-300">
-              중요한 업데이트와 리마인더를 받으세요
+              앱의 기본 설정을 관리합니다
             </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-3 rounded-xl ${
-                    settings.notifications_enabled 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/50' 
-                      : 'bg-gray-100 dark:bg-gray-700'
-                  }`}>
-                    {settings.notifications_enabled ? (
-                      <Bell className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                    ) : (
-                      <BellOff className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      푸시 알림
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      할 일 리마인더와 일정 알림을 브라우저로 받습니다
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleNotificationToggle}
-                  disabled={loading}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shadow-inner ${
-                    settings.notifications_enabled 
-                      ? 'bg-indigo-500' 
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform ${
-                      settings.notifications_enabled ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+              <div className="text-center text-gray-500 dark:text-gray-400">
+                추가 설정 옵션이 곧 제공될 예정입니다
               </div>
-
-              {notificationPermission === 'denied' && (
-                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h4 className="text-sm font-semibold text-red-800 dark:text-red-300">
-                        알림이 차단됨
-                      </h4>
-                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-                        브라우저 설정에서 이 사이트의 알림을 허용해주세요.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {notificationPermission === 'granted' && settings.notifications_enabled && (
-                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-500" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                        알림이 활성화되었습니다. 중요한 업데이트를 놓치지 않으세요!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </section>
