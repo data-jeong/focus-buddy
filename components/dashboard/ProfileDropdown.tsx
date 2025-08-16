@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { Trophy, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -58,12 +58,12 @@ export default function ProfileDropdown({ user }: { user: any }) {
           </div>
           
           <Link
-            href="/dashboard"
+            href="/dashboard/achievements"
             className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={() => setIsOpen(false)}
           >
-            <User className="h-4 w-4" />
-            <span>프로필</span>
+            <Trophy className="h-4 w-4" />
+            <span>나의 업적</span>
           </Link>
           
           <Link

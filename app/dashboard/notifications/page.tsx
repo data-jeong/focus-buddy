@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, BellOff, Clock, Calendar, CheckCircle } from 'lucide-react'
+import { Bell, BellOff, Clock, Calendar, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -65,8 +65,8 @@ export default function NotificationsPage() {
           message: todo.title,
           time: todo.due_date,
           icon: CheckCircle,
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-100',
+          color: 'text-blue-600 dark:text-blue-400',
+          bgColor: 'bg-blue-100 dark:bg-blue-900/30',
         })
       })
     }
@@ -81,8 +81,8 @@ export default function NotificationsPage() {
           message: schedule.title,
           time: schedule.start_time,
           icon: Calendar,
-          color: 'text-green-600',
-          bgColor: 'bg-green-100',
+          color: 'text-green-600 dark:text-green-400',
+          bgColor: 'bg-green-100 dark:bg-green-900/30',
         })
       })
     }
@@ -101,122 +101,140 @@ export default function NotificationsPage() {
       return
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    try {
-      const response = await fetch('/api/push', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: 'Focus Buddy 테스트 알림',
-          body: '알림이 정상적으로 작동합니다!',
-          userId: user.id,
-        }),
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification('Focus Buddy 테스트 알림', {
+        body: '알림이 정상적으로 작동합니다!',
+        icon: '/icon-192x192.png',
+        badge: '/icon-192x192.png',
+        tag: 'test-notification',
+        requireInteraction: false,
       })
 
-      if (response.ok) {
-        toast.success('테스트 알림을 전송했습니다')
-      } else {
-        toast.error('알림 전송에 실패했습니다')
+      notification.onclick = () => {
+        window.focus()
+        notification.close()
       }
-    } catch (error) {
-      toast.error('알림 전송 중 오류가 발생했습니다')
+
+      toast.success('테스트 알림을 보냈습니다')
+    } else {
+      toast.error('알림 권한이 없습니다')
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">알림 센터</h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          할 일과 일정 알림을 관리하세요
+        </p>
+      </div>
+
+      {/* Notification Status */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">알림 센터</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              예정된 일정과 할 일 마감을 확인하세요
-            </p>
+          <div className="flex items-center space-x-4">
+            {settings?.notifications_enabled ? (
+              <>
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Bell className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    알림 활성화됨
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    브라우저 알림을 받고 있습니다
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <BellOff className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    알림 비활성화됨
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    설정에서 알림을 활성화하세요
+                  </p>
+                </div>
+              </>
+            )}
           </div>
           <button
             onClick={sendTestNotification}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            테스트 알림 보내기
+            테스트 알림
           </button>
         </div>
       </div>
 
-      {/* Notification Status */}
-      {settings && (
-        <div className={`rounded-xl p-4 ${
-          settings.notifications_enabled 
-            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' 
-            : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
-        }`}>
-          <div className="flex items-center space-x-3">
-            {settings.notifications_enabled ? (
-              <>
-                <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
-                <span className="text-sm text-green-700 dark:text-green-300">알림이 활성화되어 있습니다</span>
-              </>
-            ) : (
-              <>
-                <BellOff className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">알림이 비활성화되어 있습니다</span>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Upcoming Notifications */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">예정된 알림</h2>
-        </div>
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {notifications.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-              <p>예정된 알림이 없습니다</p>
-            </div>
-          ) : (
-            notifications.map((notification) => {
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          예정된 알림
+        </h2>
+        
+        {notifications.length === 0 ? (
+          <div className="text-center py-12">
+            <Info className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">
+              예정된 알림이 없습니다
+            </p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+              할 일과 일정을 추가하면 여기에 표시됩니다
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {notifications.map((notification) => {
               const Icon = notification.icon
-              const notificationTime = new Date(notification.time)
-              const isWithinHour = notificationTime.getTime() - Date.now() < 60 * 60 * 1000
-              
               return (
-                <div key={notification.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <div className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-lg ${notification.bgColor}`}>
-                      <Icon className={`h-5 w-5 ${notification.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {notification.title}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {notification.message}
-                      </p>
-                      <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span className={isWithinHour ? 'text-red-600 font-medium' : ''}>
-                          {format(notificationTime, 'MM월 dd일 HH:mm', { locale: ko })}
-                        </span>
-                        {isWithinHour && (
-                          <span className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
-                            곧 시작
-                          </span>
-                        )}
-                      </div>
+                <div
+                  key={notification.id}
+                  className="flex items-start space-x-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className={`p-2 rounded-lg ${notification.bgColor}`}>
+                    <Icon className={`h-5 w-5 ${notification.color}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {format(new Date(notification.time), 'MM월 dd일 HH:mm', { locale: ko })}
                     </div>
                   </div>
                 </div>
               )
-            })
-          )}
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Notification Settings Info */}
+      <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+        <div className="flex">
+          <AlertCircle className="h-5 w-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+          <div className="ml-3">
+            <h4 className="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+              알림 설정 팁
+            </h4>
+            <ul className="mt-2 text-sm text-indigo-700 dark:text-indigo-400 space-y-1">
+              <li>• 할 일 마감 30분 전에 알림을 받습니다</li>
+              <li>• 일정 시작 15분 전에 알림을 받습니다</li>
+              <li>• 브라우저가 열려있을 때만 알림이 작동합니다</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

@@ -321,7 +321,7 @@ export default function CurrentTask() {
           <option value="">작업을 선택하세요</option>
           {todos.map((todo) => (
             <option key={todo.id} value={todo.id}>
-              [{todo.priority === 'high' ? '높음' : todo.priority === 'medium' ? '보통' : '낮음'}] 
+              [{todo.priority === 'high' ? '🔴 높음' : todo.priority === 'medium' ? '🟡 보통' : '🟢 낮음'}] 
               {todo.title} 
               {todo.total_time_spent > 0 && ` (${formatTime(todo.total_time_spent)})`}
             </option>

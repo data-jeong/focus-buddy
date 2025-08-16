@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Clock, GripVertical } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { format, isToday, isTomorrow } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -47,6 +47,11 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     return format(date, 'MM월 dd일', { locale: ko })
   }
 
+  const handleDragStart = (e: React.DragEvent, schedule: any) => {
+    e.dataTransfer.setData('schedule', JSON.stringify(schedule))
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -65,8 +70,11 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
             return (
               <div
                 key={schedule.id}
-                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                draggable
+                onDragStart={(e) => handleDragStart(e, schedule)}
+                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-move group"
               >
+                <GripVertical className="h-4 w-4 text-gray-400 dark:text-gray-500 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div
                   className="w-1 h-full rounded-full flex-shrink-0"
                   style={{ backgroundColor: schedule.color }}
@@ -85,6 +93,14 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
                   </div>
                   {schedule.description && (
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{schedule.description}</p>
+                  )}
+                  {schedule.recurrence && schedule.recurrence !== 'none' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 mt-2">
+                      {schedule.recurrence === 'daily' && '매일'}
+                      {schedule.recurrence === 'weekly' && '매주'}
+                      {schedule.recurrence === 'monthly' && '매월'}
+                      {schedule.recurrence === 'yearly' && '매년'}
+                    </span>
                   )}
                 </div>
               </div>
