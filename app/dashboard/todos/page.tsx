@@ -15,6 +15,11 @@ export default function TodosPage() {
   const [selectedTodo, setSelectedTodo] = useState<any>(null)
   const [filter, setFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; todoId: string | null; todoTitle: string }>({ 
+    open: false, 
+    todoId: null, 
+    todoTitle: '' 
+  })
   const supabase = createClient()
 
   useEffect(() => {
@@ -81,17 +86,21 @@ export default function TodosPage() {
       .eq('id', id)
   }
 
-  const deleteTodo = async (id: string) => {
+  const deleteTodo = async () => {
+    if (!deleteConfirm.todoId) return
+    
     const { error } = await supabase
       .from('todos')
       .delete()
-      .eq('id', id)
+      .eq('id', deleteConfirm.todoId)
     
     if (error) {
       toast.error('삭제 실패')
     } else {
       toast.success('할 일이 삭제되었습니다')
+      fetchTodos() // Re-render after deletion
     }
+    setDeleteConfirm({ open: false, todoId: null, todoTitle: '' })
   }
 
   const handleEdit = (todo: any) => {
@@ -102,6 +111,7 @@ export default function TodosPage() {
   const handleModalClose = () => {
     setModalOpen(false)
     setSelectedTodo(null)
+    fetchTodos() // Re-render after save
   }
 
   const getPriorityColor = (priority: string) => {
@@ -305,7 +315,11 @@ export default function TodosPage() {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => deleteTodo(todo.id)}
+                          onClick={() => setDeleteConfirm({ 
+                            open: true, 
+                            todoId: todo.id, 
+                            todoTitle: todo.title 
+                          })}
                           className="p-1 text-gray-400 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -325,6 +339,35 @@ export default function TodosPage() {
         onClose={handleModalClose}
         todo={selectedTodo}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setDeleteConfirm({ open: false, todoId: null, todoTitle: '' })} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              할 일 삭제
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              "<span className="font-medium text-gray-900 dark:text-gray-100">{deleteConfirm.todoTitle}</span>"을(를) 삭제하시겠습니까?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setDeleteConfirm({ open: false, todoId: null, todoTitle: '' })}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={deleteTodo}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

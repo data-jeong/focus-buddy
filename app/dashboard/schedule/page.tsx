@@ -203,22 +203,28 @@ export default function SchedulePage() {
     
     if (schedule?.is_recurring_instance) {
       // Show modal for recurring schedule deletion
-      setRecurringDeleteModal({ open: true, scheduleId: schedule.original_id })
+      setRecurringDeleteModal({ open: true, scheduleId: schedule.original_id, instanceDate: schedule.instance_date })
     } else {
-      // Direct delete for non-recurring
-      const { error } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('id', scheduleId)
-      
-      if (error) {
-        toast.error('일정 삭제 실패')
-      } else {
-        toast.success('일정이 삭제되었습니다', { icon: '🗑️' })
-        setDeleteConfirm(null)
-        fetchSchedules()
-      }
+      // Show confirmation for non-recurring
+      setDeleteConfirm(scheduleId)
     }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    
+    const { error } = await supabase
+      .from('schedules')
+      .delete()
+      .eq('id', deleteConfirm)
+    
+    if (error) {
+      toast.error('일정 삭제 실패')
+    } else {
+      toast.success('일정이 삭제되었습니다', { icon: '🗑️' })
+      fetchSchedules()
+    }
+    setDeleteConfirm(null)
   }
 
   const handleDeleteRecurring = async (deleteType: 'single' | 'future' | 'all') => {
@@ -288,7 +294,7 @@ export default function SchedulePage() {
     setModalInitialDate(undefined)
     setModalInitialStartTime(undefined)
     setModalInitialEndTime(undefined)
-    fetchSchedules()
+    fetchSchedules() // Re-render after save/close
   }
 
   const getCellPosition = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -636,38 +642,15 @@ export default function SchedulePage() {
                         <Edit className="h-3 w-3 text-white" />
                       </button>
                       {!schedule.is_recurring_instance ? (
-                        isDeleting ? (
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteSchedule(schedule.id)
-                                }}
-                                className="p-1 bg-red-500 hover:bg-red-600 rounded transition-colors"
-                              >
-                                <Trash2 className="h-3 w-3 text-white" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setDeleteConfirm(null)
-                                }}
-                                className="p-1 bg-gray-500 hover:bg-gray-600 rounded transition-colors"
-                              >
-                                <X className="h-3 w-3 text-white" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteConfirm(schedule.id)
-                              }}
-                              className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
-                            >
-                              <Trash2 className="h-3 w-3 text-white" />
-                            </button>
-                          )
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteSchedule(schedule.id)
+                          }}
+                          className="p-1 bg-white/20 hover:bg-white/30 rounded transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3 text-white" />
+                        </button>
                       ) : (
                         // 반복 일정 인스턴스의 경우에도 삭제 버튼 표시
                         <button
@@ -727,6 +710,35 @@ export default function SchedulePage() {
         initialStartTime={modalInitialStartTime}
         initialEndTime={modalInitialEndTime}
       />
+
+      {/* Regular Schedule Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setDeleteConfirm(null)} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              일정 삭제
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              이 일정을 삭제하시겠습니까?
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recurring Delete Modal */}
       {recurringDeleteModal.open && (
