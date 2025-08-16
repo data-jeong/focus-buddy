@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  Trophy, Fire, Target, Sparkles, Star, TrendingUp, 
+  Trophy, Flame, Target, Sparkles, Star, TrendingUp, 
   Award, Zap, Activity, Timer, Crown, Medal, Rocket
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay } from 'date-fns'
@@ -104,7 +104,7 @@ export default function AchievementsPage() {
 
   const achievements = [
     { 
-      icon: Fire, 
+      icon: Flame, 
       title: '🔥 연속 기록', 
       value: `${stats.activeDays}일`,
       desc: '이번 달 활동일',

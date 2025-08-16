@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, Circle, Clock, AlertCircle, Flag, Tag } from 'lucide-react'
+import { CheckCircle, Circle, Clock, AlertCircle, Flag, Tag, ListTodo, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -157,7 +157,13 @@ export default function TodoWidget({ initialTodos }: { initialTodos: any[] }) {
       
       <div className="space-y-3">
         {todos.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">할 일이 없습니다</p>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ListTodo className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
+            </div>
+            <p className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">할 일이 없습니다</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">새로운 할 일을 추가해보세요!</p>
+          </div>
         ) : (
           todos.map((todo) => (
             <div

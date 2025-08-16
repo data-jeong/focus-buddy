@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit } from 'lucide-react'
+import { Plus, Filter, Search, CheckCircle, Circle, Trash2, Edit, CheckSquare } from 'lucide-react'
 import TodoModal from '@/components/modals/TodoModal'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -225,10 +225,31 @@ export default function TodosPage() {
         </div>
 
         {/* Todo List */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {filteredTodos.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {searchQuery ? '검색 결과가 없습니다' : '할 일이 없습니다'}
+            <div className="py-16 px-8 text-center">
+              {searchQuery ? (
+                <div>
+                  <Search className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">검색 결과가 없습니다</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">다른 검색어를 시도해보세요</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckSquare className="h-10 w-10 text-indigo-500 dark:text-indigo-400" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">할 일을 추가해보세요!</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">새로운 할 일을 추가하여 생산성을 높여보세요</p>
+                  <button
+                    onClick={() => setModalOpen(true)}
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 shadow-lg shadow-indigo-500/25 transition-all"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>첫 할 일 추가하기</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             filteredTodos.map((todo) => (
@@ -239,12 +260,12 @@ export default function TodosPage() {
                 <div className="flex items-start space-x-3">
                   <button
                     onClick={() => toggleTodo(todo.id, todo.completed)}
-                    className="mt-0.5"
+                    className="mt-0.5 transition-transform hover:scale-110"
                   >
                     {todo.completed ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-success-500" />
                     ) : (
-                      <Circle className="h-5 w-5 text-gray-400" />
+                      <Circle className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                     )}
                   </button>
                   <div className="flex-1">

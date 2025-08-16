@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, GripVertical, Repeat } from 'lucide-react'
+import { Calendar, Clock, GripVertical, Repeat, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { format, isToday, isTomorrow, addDays, addMonths, isWithinInterval } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -149,7 +149,13 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
       
       <div className="space-y-3">
         {schedules.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">예정된 일정이 없습니다</p>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CalendarDays className="h-8 w-8 text-purple-500 dark:text-purple-400" />
+            </div>
+            <p className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">오늘 일정이 없습니다</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">새로운 일정을 추가해보세요!</p>
+          </div>
         ) : (
           schedules.map((schedule) => {
             const startTime = new Date(schedule.start_time)
