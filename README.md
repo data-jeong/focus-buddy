@@ -1,6 +1,6 @@
 # Focus Buddy 🎯
 
-[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
 [![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -84,10 +84,15 @@ yarn install
 ### 3. 환경 변수 설정
 `.env.local` 파일을 생성하고 다음 내용을 추가:
 ```env
+# App URL (이메일 인증 리다이렉트용)
+NEXT_PUBLIC_APP_URL=https://your-app-domain.com
+
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+> **중요**: `NEXT_PUBLIC_APP_URL`은 프로덕션 환경에서 실제 도메인으로 설정해야 이메일 인증이 정상 작동합니다.
 
 ### 4. 데이터베이스 마이그레이션
 ```bash
@@ -144,6 +149,18 @@ npm start
 ```
 
 ## 📈 버전 히스토리
+
+### v0.1.3 (2024-01-16)
+- 🔐 회원가입 이메일 리다이렉트 URL 환경변수화
+- 🎯 프로덕션 환경 설정 개선
+- 🐛 TypeScript/ESLint 에러 수정
+- 📝 환경변수 설정 문서 업데이트
+
+### v0.1.2 (2024-01-16)  
+- ✨ 로그인 페이지 캐치프레이즈 개선
+- ⏳ 모든 사용자 액션에 로딩 상태 추가
+- 🎨 LoadingSpinner 컴포넌트 구현
+- 💫 페이지별 로딩 컴포넌트 추가
 
 ### v0.1.1 (2024-01-16)
 - 🔧 TypeScript 타입 안정성 개선

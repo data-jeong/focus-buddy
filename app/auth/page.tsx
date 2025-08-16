@@ -81,6 +81,7 @@ export default function AuthPage() {
           <Auth
             supabaseClient={supabase}
             onSubmit={() => setIsLoading(true)}
+            redirectTo={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`}
             appearance={{
             theme: ThemeSupa,
             variables: {
