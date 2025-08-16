@@ -31,6 +31,8 @@ const COLORS = [
 const RECURRENCE_OPTIONS = [
   { value: 'none', label: '반복 안 함' },
   { value: 'daily', label: '매일' },
+  { value: 'weekdays', label: '평일만 (월-금)' },
+  { value: 'weekends', label: '주말만 (토-일)' },
   { value: 'weekly', label: '매주' },
   { value: 'monthly', label: '매월' },
   { value: 'yearly', label: '매년' },
@@ -47,8 +49,10 @@ export default function ScheduleModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
-  const [startTime, setStartTime] = useState('09:00')
-  const [endTime, setEndTime] = useState('10:00')
+  const [startHour, setStartHour] = useState('09')
+  const [startMinute, setStartMinute] = useState('00')
+  const [endHour, setEndHour] = useState('10')
+  const [endMinute, setEndMinute] = useState('00')
   const [color, setColor] = useState(COLORS[0])
   const [recurrence, setRecurrence] = useState('none')
   const [loading, setLoading] = useState(false)
@@ -61,8 +65,10 @@ export default function ScheduleModal({
       const scheduleStart = new Date(schedule.start_time)
       const scheduleEnd = new Date(schedule.end_time)
       setDate(format(scheduleStart, 'yyyy-MM-dd'))
-      setStartTime(format(scheduleStart, 'HH:mm'))
-      setEndTime(format(scheduleEnd, 'HH:mm'))
+      setStartHour(format(scheduleStart, 'HH'))
+      setStartMinute(format(scheduleStart, 'mm'))
+      setEndHour(format(scheduleEnd, 'HH'))
+      setEndMinute(format(scheduleEnd, 'mm'))
       setColor(schedule.color || COLORS[0])
       setRecurrence(schedule.recurrence || 'none')
     } else {
@@ -80,42 +86,27 @@ export default function ScheduleModal({
       }
       
       if (initialStartTime) {
-        setStartTime(initialStartTime)
+        const [h, m] = initialStartTime.split(':')
+        setStartHour(h)
+        setStartMinute(m)
       } else {
-        setStartTime('09:00')
+        setStartHour('09')
+        setStartMinute('00')
       }
       
       if (initialEndTime) {
-        setEndTime(initialEndTime)
+        const [h, m] = initialEndTime.split(':')
+        setEndHour(h)
+        setEndMinute(m)
       } else {
-        setEndTime('10:00')
+        setEndHour('10')
+        setEndMinute('00')
       }
     }
   }, [schedule, open, initialDate, initialStartTime, initialEndTime])
 
-  const validateTime = (time: string) => {
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
-    return timeRegex.test(time)
-  }
-
-  const formatTimeInput = (value: string): string => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '')
-    
-    // Format as HH:MM
-    if (digits.length <= 2) {
-      return digits
-    } else if (digits.length <= 4) {
-      return `${digits.slice(0, 2)}:${digits.slice(2)}`
-    } else {
-      return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`
-    }
-  }
-
-  const handleTimeChange = (value: string, setter: (val: string) => void) => {
-    const formatted = formatTimeInput(value)
-    setter(formatted)
-  }
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
+  const minutes = ['00', '15', '30', '45']
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -129,20 +120,9 @@ export default function ScheduleModal({
       return
     }
 
-    // Validate time format
-    if (!validateTime(startTime)) {
-      toast.error('시작 시간 형식이 올바르지 않습니다 (HH:MM)')
-      return
-    }
-
-    if (!validateTime(endTime)) {
-      toast.error('종료 시간 형식이 올바르지 않습니다 (HH:MM)')
-      return
-    }
-
     // Combine date and time
-    const startDateTime = new Date(`${date}T${startTime}:00`)
-    const endDateTime = new Date(`${date}T${endTime}:00`)
+    const startDateTime = new Date(`${date}T${startHour}:${startMinute}:00`)
+    const endDateTime = new Date(`${date}T${endHour}:${endMinute}:00`)
 
     if (endDateTime <= startDateTime) {
       toast.error('종료 시간은 시작 시간보다 늦어야 합니다')
@@ -150,8 +130,8 @@ export default function ScheduleModal({
     }
 
     // Check if end time goes past 23:30
-    const endHours = parseInt(endTime.split(':')[0])
-    const endMinutes = parseInt(endTime.split(':')[1])
+    const endHours = parseInt(endHour)
+    const endMinutes = parseInt(endMinute)
     if (endHours > 23 || (endHours === 23 && endMinutes > 30)) {
       toast.error('일정은 23:30을 넘길 수 없습니다')
       return
@@ -184,7 +164,8 @@ export default function ScheduleModal({
         .eq('id', schedule.id)
 
       if (error) {
-        toast.error('일정 수정 실패')
+        console.error('Schedule update error:', error)
+        toast.error(`일정 수정 실패: ${error.message}`)
       } else {
         toast.success('일정이 수정되었습니다')
         onClose()
@@ -196,7 +177,8 @@ export default function ScheduleModal({
         .insert([scheduleData])
 
       if (error) {
-        toast.error('일정 추가 실패')
+        console.error('Schedule creation error:', error)
+        toast.error(`일정 추가 실패: ${error.message}`)
       } else {
         toast.success('일정이 추가되었습니다')
         onClose()
@@ -267,34 +249,60 @@ export default function ScheduleModal({
             </div>
 
             {/* Time Range */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Clock className="inline h-4 w-4 mr-1" />
                   시작 시간
                 </label>
-                <input
-                  type="text"
-                  value={startTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setStartTime)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="0900"
-                  maxLength={5}
-                />
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={startHour}
+                    onChange={(e) => setStartHour(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {hours.map(h => (
+                      <option key={h} value={h}>{h}시</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-500 dark:text-gray-400">:</span>
+                  <select
+                    value={startMinute}
+                    onChange={(e) => setStartMinute(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {minutes.map(m => (
+                      <option key={m} value={m}>{m}분</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Clock className="inline h-4 w-4 mr-1" />
                   종료 시간
                 </label>
-                <input
-                  type="text"
-                  value={endTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setEndTime)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="1000"
-                  maxLength={5}
-                />
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={endHour}
+                    onChange={(e) => setEndHour(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {hours.map(h => (
+                      <option key={h} value={h}>{h}시</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-500 dark:text-gray-400">:</span>
+                  <select
+                    value={endMinute}
+                    onChange={(e) => setEndMinute(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {minutes.map(m => (
+                      <option key={m} value={m}>{m}분</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 

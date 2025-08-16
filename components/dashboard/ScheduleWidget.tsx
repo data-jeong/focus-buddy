@@ -1,14 +1,91 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, GripVertical } from 'lucide-react'
+import { Calendar, Clock, GripVertical, Repeat } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { format, isToday, isTomorrow } from 'date-fns'
+import { format, isToday, isTomorrow, addDays, addMonths, isWithinInterval } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function ScheduleWidget({ initialSchedules }: { initialSchedules: any[] }) {
-  const [schedules, setSchedules] = useState(initialSchedules)
+  const [schedules, setSchedules] = useState<any[]>([])
   const supabase = createClient()
+
+  // Generate recurring instances for today
+  const generateTodayRecurringInstances = (schedule: any) => {
+    const instances: any[] = []
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
+    
+    const startTime = new Date(schedule.start_time)
+    const endTime = new Date(schedule.end_time)
+    const duration = endTime.getTime() - startTime.getTime()
+    
+    let currentDate = new Date(startTime)
+    const maxIterations = 365
+    let iterations = 0
+    
+    while (currentDate <= todayEnd && iterations < maxIterations) {
+      if (isWithinInterval(currentDate, { start: todayStart, end: todayEnd })) {
+        instances.push({
+          ...schedule,
+          id: `${schedule.id}_${currentDate.getTime()}`,
+          start_time: currentDate.toISOString(),
+          end_time: new Date(currentDate.getTime() + duration).toISOString(),
+          is_recurring_instance: true,
+          original_id: schedule.id
+        })
+      }
+      
+      // Move to next occurrence
+      switch (schedule.recurrence) {
+        case 'daily':
+          currentDate = addDays(currentDate, 1)
+          break
+        case 'weekdays':
+          do {
+            currentDate = addDays(currentDate, 1)
+          } while (currentDate.getDay() === 0 || currentDate.getDay() === 6)
+          break
+        case 'weekends':
+          do {
+            currentDate = addDays(currentDate, 1)
+          } while (currentDate.getDay() !== 0 && currentDate.getDay() !== 6)
+          break
+        case 'weekly':
+          currentDate = addDays(currentDate, 7)
+          break
+        case 'monthly':
+          currentDate = addMonths(currentDate, 1)
+          break
+        case 'yearly':
+          currentDate = addMonths(currentDate, 12)
+          break
+        default:
+          return instances
+      }
+      iterations++
+    }
+    
+    return instances
+  }
+
+  useEffect(() => {
+    // Process initial schedules to include recurring instances
+    const allSchedules: any[] = []
+    initialSchedules.forEach(schedule => {
+      if (schedule.recurrence && schedule.recurrence !== 'none') {
+        const instances = generateTodayRecurringInstances(schedule)
+        allSchedules.push(...instances)
+      } else {
+        allSchedules.push(schedule)
+      }
+    })
+    setSchedules(allSchedules.sort((a, b) => 
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    ))
+  }, [initialSchedules])
 
   useEffect(() => {
     const channel = supabase
@@ -94,14 +171,18 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
                   {schedule.description && (
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{schedule.description}</p>
                   )}
-                  {schedule.recurrence && schedule.recurrence !== 'none' && (
+                  {(schedule.recurrence && schedule.recurrence !== 'none') || schedule.is_recurring_instance ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 mt-2">
+                      <Repeat className="h-3 w-3 mr-1" />
                       {schedule.recurrence === 'daily' && '매일'}
+                      {schedule.recurrence === 'weekdays' && '평일'}
+                      {schedule.recurrence === 'weekends' && '주말'}
                       {schedule.recurrence === 'weekly' && '매주'}
                       {schedule.recurrence === 'monthly' && '매월'}
                       {schedule.recurrence === 'yearly' && '매년'}
+                      {schedule.is_recurring_instance && '반복'}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )

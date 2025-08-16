@@ -28,6 +28,9 @@ export default function SchedulePage() {
   const [modalInitialEndTime, setModalInitialEndTime] = useState<string | undefined>()
   const [hoveredSchedule, setHoveredSchedule] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [recurringDeleteModal, setRecurringDeleteModal] = useState<{ open: boolean; scheduleId: string | null }>({ open: false, scheduleId: null })
+  const [resizingSchedule, setResizingSchedule] = useState<{ id: string; type: 'top' | 'bottom' } | null>(null)
+  const [resizeStartY, setResizeStartY] = useState<number>(0)
   const gridRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -122,6 +125,18 @@ export default function SchedulePage() {
         case 'daily':
           currentDate = addDays(currentDate, 1)
           break
+        case 'weekdays':
+          // Skip to next weekday
+          do {
+            currentDate = addDays(currentDate, 1)
+          } while (currentDate.getDay() === 0 || currentDate.getDay() === 6)
+          break
+        case 'weekends':
+          // Skip to next weekend day
+          do {
+            currentDate = addDays(currentDate, 1)
+          } while (currentDate.getDay() !== 0 && currentDate.getDay() !== 6)
+          break
         case 'weekly':
           currentDate = addDays(currentDate, 7)
           break
@@ -171,17 +186,40 @@ export default function SchedulePage() {
   const handleDeleteSchedule = async (scheduleId: string) => {
     // Check if it's a recurring instance
     const schedule = schedules.find(s => s.id === scheduleId)
-    const actualId = schedule?.is_recurring_instance ? schedule.original_id : scheduleId
+    
+    if (schedule?.is_recurring_instance) {
+      // Show modal for recurring schedule deletion
+      setRecurringDeleteModal({ open: true, scheduleId: schedule.original_id })
+    } else {
+      // Direct delete for non-recurring
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', scheduleId)
+      
+      if (error) {
+        toast.error('일정 삭제 실패')
+      } else {
+        toast.success('일정이 삭제되었습니다', { icon: '🗑️' })
+        setDeleteConfirm(null)
+        fetchSchedules()
+      }
+    }
+  }
+
+  const handleDeleteRecurring = async (deleteAll: boolean) => {
+    if (!recurringDeleteModal.scheduleId) return
     
     const { error } = await supabase
       .from('schedules')
       .delete()
-      .eq('id', actualId)
+      .eq('id', recurringDeleteModal.scheduleId)
     
     if (error) {
       toast.error('일정 삭제 실패')
     } else {
-      toast.success('일정이 삭제되었습니다', { icon: '🗑️' })
+      toast.success(deleteAll ? '모든 반복 일정이 삭제되었습니다' : '일정이 삭제되었습니다', { icon: '🗑️' })
+      setRecurringDeleteModal({ open: false, scheduleId: null })
       setDeleteConfirm(null)
       fetchSchedules()
     }
@@ -239,7 +277,58 @@ export default function SchedulePage() {
     setDragEnd(position)
   }
 
+  const handleResizeStart = (e: React.MouseEvent, scheduleId: string, type: 'top' | 'bottom') => {
+    e.preventDefault()
+    e.stopPropagation()
+    setResizingSchedule({ id: scheduleId, type })
+    setResizeStartY(e.clientY)
+  }
+
+  const handleResizeMove = async (e: React.MouseEvent) => {
+    if (!resizingSchedule || !gridRef.current) return
+    
+    const schedule = schedules.find(s => s.id === resizingSchedule.id)
+    if (!schedule) return
+    
+    const deltaY = e.clientY - resizeStartY
+    const hourDelta = deltaY / 60 // 60px per hour
+    
+    const startTime = new Date(schedule.start_time)
+    const endTime = new Date(schedule.end_time)
+    
+    if (resizingSchedule.type === 'top') {
+      // Adjust start time
+      const newStartTime = new Date(startTime.getTime() + hourDelta * 60 * 60 * 1000)
+      if (newStartTime < endTime) {
+        await supabase
+          .from('schedules')
+          .update({ start_time: newStartTime.toISOString() })
+          .eq('id', schedule.is_recurring_instance ? schedule.original_id : schedule.id)
+      }
+    } else {
+      // Adjust end time
+      const newEndTime = new Date(endTime.getTime() + hourDelta * 60 * 60 * 1000)
+      if (newEndTime > startTime) {
+        await supabase
+          .from('schedules')
+          .update({ end_time: newEndTime.toISOString() })
+          .eq('id', schedule.is_recurring_instance ? schedule.original_id : schedule.id)
+      }
+    }
+    
+    setResizeStartY(e.clientY)
+  }
+
+  const handleResizeEnd = () => {
+    setResizingSchedule(null)
+    fetchSchedules()
+  }
+
   const handleMouseUp = () => {
+    if (resizingSchedule) {
+      handleResizeEnd()
+      return
+    }
     if (!isDragging || !dragStart || !dragEnd) {
       setIsDragging(false)
       setDragStart(null)
@@ -390,10 +479,16 @@ export default function SchedulePage() {
             ref={gridRef}
             className="relative select-none"
             onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
+            onMouseMove={(e) => {
+              if (resizingSchedule) {
+                handleResizeMove(e)
+              } else {
+                handleMouseMove(e)
+              }
+            }}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            style={{ cursor: isDragging ? 'crosshair' : 'default' }}
+            style={{ cursor: isDragging ? 'crosshair' : resizingSchedule ? 'ns-resize' : 'default' }}
           >
             {/* Hour rows */}
             {HOURS.map((hour) => (
@@ -459,6 +554,19 @@ export default function SchedulePage() {
                   onClick={() => !isDeleting && handleScheduleClick(schedule)}
                 >
                   <div className="p-1.5 h-full flex flex-col relative">
+                    {/* Resize Handles */}
+                    {!schedule.is_recurring_instance && (
+                      <>
+                        <div
+                          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/40 transition-all"
+                          onMouseDown={(e) => handleResizeStart(e, schedule.id, 'top')}
+                        />
+                        <div
+                          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/40 transition-all"
+                          onMouseDown={(e) => handleResizeStart(e, schedule.id, 'bottom')}
+                        />
+                      </>
+                    )}
                     {/* Actions */}
                     <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                       {!schedule.is_recurring_instance && (
@@ -532,6 +640,7 @@ export default function SchedulePage() {
               )
             })}
           </div>
+          </div>
         </div>
       </div>
 
@@ -543,6 +652,81 @@ export default function SchedulePage() {
         initialStartTime={modalInitialStartTime}
         initialEndTime={modalInitialEndTime}
       />
+
+      {/* Recurring Delete Modal */}
+      {recurringDeleteModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setRecurringDeleteModal({ open: false, scheduleId: null })} />
+          <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+              <Repeat className="h-5 w-5 mr-2 text-indigo-500" />
+              반복 일정 삭제
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              이 일정은 반복되는 일정입니다.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+              어떤 일정을 삭제하시겠습니까?
+            </p>
+            
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={() => {
+                  // TODO: Implement delete only this instance
+                  toast.error('이 기능은 준비 중입니다')
+                  setRecurringDeleteModal({ open: false, scheduleId: null })
+                }}
+                className="w-full p-4 text-left border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">이번 일정만 삭제</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">선택한 날짜의 일정만 삭제합니다</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                </div>
+              </button>
+              
+              <button
+                onClick={() => {
+                  // TODO: Implement delete future occurrences
+                  toast.error('이 기능은 준비 중입니다')
+                  setRecurringDeleteModal({ open: false, scheduleId: null })
+                }}
+                className="w-full p-4 text-left border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">이후 반복 일정 삭제</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">오늘 이후의 모든 반복 일정을 삭제합니다</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                </div>
+              </button>
+              
+              <button
+                onClick={() => handleDeleteRecurring(true)}
+                className="w-full p-4 text-left border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-red-700 dark:text-red-400">모든 반복 일정 삭제</p>
+                    <p className="text-sm text-red-600 dark:text-red-500 mt-1">과거와 미래의 모든 반복 일정을 삭제합니다</p>
+                  </div>
+                  <Trash2 className="h-5 w-5 text-red-500 group-hover:text-red-600" />
+                </div>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setRecurringDeleteModal({ open: false, scheduleId: null })}
+              className="w-full px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,12 @@ import CurrentTask from '@/components/dashboard/CurrentTask'
 export default async function DashboardPage() {
   const supabase = await createClient()
   
+  // Get start and end of today
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
   const [todosResponse, schedulesResponse] = await Promise.all([
     supabase
       .from('todos')
@@ -17,9 +23,8 @@ export default async function DashboardPage() {
     supabase
       .from('schedules')
       .select('*')
-      .gte('start_time', new Date().toISOString())
+      .or(`start_time.gte.${todayStart.toISOString()}.lte.${todayEnd.toISOString()},recurrence.neq.none`)
       .order('start_time', { ascending: true })
-      .limit(5)
   ])
 
   return (
