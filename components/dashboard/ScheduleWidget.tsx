@@ -22,9 +22,23 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
     const endTime = new Date(schedule.end_time)
     const duration = endTime.getTime() - startTime.getTime()
     
+    // Parse excluded dates and recurrence end
+    const excludedDates = schedule.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+    const recurrenceEnd = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
+    
     // Start from the original date but adjust to today's date with same time
     let currentDate = new Date(todayStart)
     currentDate.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0)
+    
+    // Check if today is excluded or past recurrence end
+    const todayStr = currentDate.toISOString().split('T')[0]
+    if (excludedDates.includes(todayStr)) {
+      return instances
+    }
+    
+    if (recurrenceEnd && currentDate > recurrenceEnd) {
+      return instances
+    }
     
     // Check if the schedule should occur today based on recurrence type
     const shouldOccurToday = () => {
@@ -54,7 +68,8 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
         start_time: currentDate.toISOString(),
         end_time: new Date(currentDate.getTime() + duration).toISOString(),
         is_recurring_instance: true,
-        original_id: schedule.id
+        original_id: schedule.id,
+        instance_date: todayStr
       })
     }
     
@@ -117,6 +132,9 @@ export default function ScheduleWidget({ initialSchedules }: { initialSchedules:
         ))
       }
     }
+    
+    // Fetch schedules immediately
+    fetchAndProcessSchedules()
     
     const channel = supabase
       .channel('schedules-changes')

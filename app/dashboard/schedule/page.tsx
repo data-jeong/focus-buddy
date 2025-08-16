@@ -28,7 +28,11 @@ export default function SchedulePage() {
   const [modalInitialEndTime, setModalInitialEndTime] = useState<string | undefined>()
   const [hoveredSchedule, setHoveredSchedule] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [recurringDeleteModal, setRecurringDeleteModal] = useState<{ open: boolean; scheduleId: string | null }>({ open: false, scheduleId: null })
+  const [recurringDeleteModal, setRecurringDeleteModal] = useState<{ 
+    open: boolean; 
+    scheduleId: string | null;
+    instanceDate?: string; // Date of the specific instance to delete
+  }>({ open: false, scheduleId: null })
   const [resizingSchedule, setResizingSchedule] = useState<{ id: string; type: 'top' | 'bottom' } | null>(null)
   const [resizeStartY, setResizeStartY] = useState<number>(0)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -104,19 +108,29 @@ export default function SchedulePage() {
     const endTime = new Date(schedule.end_time)
     const duration = endTime.getTime() - startTime.getTime()
     
+    // Parse excluded dates if they exist
+    const excludedDates = schedule.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+    const endDate = schedule.recurrence_end ? new Date(schedule.recurrence_end) : null
+    
     let currentDate = new Date(startTime)
     const maxIterations = 365 // Prevent infinite loops
     let iterations = 0
     
     while (currentDate < weekEnd && iterations < maxIterations) {
-      if (currentDate >= weekStart && currentDate < weekEnd) {
+      // Skip if this date is excluded or past the recurrence end date
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const isExcluded = excludedDates.includes(dateStr)
+      const isPastEndDate = endDate && currentDate > endDate
+      
+      if (currentDate >= weekStart && currentDate < weekEnd && !isExcluded && !isPastEndDate) {
         instances.push({
           ...schedule,
           id: `${schedule.id}_${currentDate.getTime()}`,
           start_time: currentDate.toISOString(),
           end_time: new Date(currentDate.getTime() + duration).toISOString(),
           is_recurring_instance: true,
-          original_id: schedule.id
+          original_id: schedule.id,
+          instance_date: dateStr
         })
       }
       
@@ -207,21 +221,64 @@ export default function SchedulePage() {
     }
   }
 
-  const handleDeleteRecurring = async (deleteAll: boolean) => {
+  const handleDeleteRecurring = async (deleteType: 'single' | 'future' | 'all') => {
     if (!recurringDeleteModal.scheduleId) return
     
-    const { error } = await supabase
-      .from('schedules')
-      .delete()
-      .eq('id', recurringDeleteModal.scheduleId)
-    
-    if (error) {
-      toast.error('일정 삭제 실패')
-    } else {
-      toast.success(deleteAll ? '모든 반복 일정이 삭제되었습니다' : '일정이 삭제되었습니다', { icon: '🗑️' })
-      setRecurringDeleteModal({ open: false, scheduleId: null })
-      setDeleteConfirm(null)
-      fetchSchedules()
+    if (deleteType === 'all') {
+      // Delete all occurrences
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', recurringDeleteModal.scheduleId)
+      
+      if (error) {
+        toast.error('일정 삭제 실패')
+      } else {
+        toast.success('모든 반복 일정이 삭제되었습니다', { icon: '🗑️' })
+        setRecurringDeleteModal({ open: false, scheduleId: null })
+        setDeleteConfirm(null)
+        fetchSchedules()
+      }
+    } else if (deleteType === 'single' && recurringDeleteModal.instanceDate) {
+      // Delete only this instance by adding to excluded dates
+      const { data: schedule } = await supabase
+        .from('schedules')
+        .select('excluded_dates')
+        .eq('id', recurringDeleteModal.scheduleId)
+        .single()
+      
+      const excludedDates = schedule?.excluded_dates ? JSON.parse(schedule.excluded_dates) : []
+      excludedDates.push(recurringDeleteModal.instanceDate)
+      
+      const { error } = await supabase
+        .from('schedules')
+        .update({ excluded_dates: JSON.stringify(excludedDates) })
+        .eq('id', recurringDeleteModal.scheduleId)
+      
+      if (error) {
+        toast.error('일정 삭제 실패')
+      } else {
+        toast.success('선택한 일정이 삭제되었습니다', { icon: '🗑️' })
+        setRecurringDeleteModal({ open: false, scheduleId: null })
+        fetchSchedules()
+      }
+    } else if (deleteType === 'future' && recurringDeleteModal.instanceDate) {
+      // Delete future occurrences by setting recurrence_end
+      const endDate = new Date(recurringDeleteModal.instanceDate)
+      endDate.setDate(endDate.getDate() - 1) // End recurrence the day before
+      
+      const { error } = await supabase
+        .from('schedules')
+        .update({ recurrence_end: endDate.toISOString() })
+        .eq('id', recurringDeleteModal.scheduleId)
+      
+      if (error) {
+        toast.error('일정 삭제 실패')
+      } else {
+        toast.success('미래의 반복 일정이 삭제되었습니다', { icon: '🗑️' })
+        setRecurringDeleteModal({ open: false, scheduleId: null })
+        fetchSchedules()
+      }
     }
   }
 
@@ -618,7 +675,11 @@ export default function SchedulePage() {
                             e.stopPropagation()
                             // 반복 일정 인스턴스일 때 바로 모달 열기
                             if (schedule.is_recurring_instance) {
-                              setRecurringDeleteModal({ open: true, scheduleId: schedule.original_id })
+                              setRecurringDeleteModal({ 
+                                open: true, 
+                                scheduleId: schedule.original_id,
+                                instanceDate: schedule.instance_date
+                              })
                             } else {
                               setDeleteConfirm(schedule.id)
                             }
@@ -685,11 +746,7 @@ export default function SchedulePage() {
             
             <div className="space-y-3 mb-6">
               <button
-                onClick={() => {
-                  // TODO: Implement delete only this instance
-                  toast.error('이 기능은 준비 중입니다')
-                  setRecurringDeleteModal({ open: false, scheduleId: null })
-                }}
+                onClick={() => handleDeleteRecurring('single')}
                 className="w-full p-4 text-left border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
               >
                 <div className="flex items-center justify-between">
@@ -702,11 +759,7 @@ export default function SchedulePage() {
               </button>
               
               <button
-                onClick={() => {
-                  // TODO: Implement delete future occurrences
-                  toast.error('이 기능은 준비 중입니다')
-                  setRecurringDeleteModal({ open: false, scheduleId: null })
-                }}
+                onClick={() => handleDeleteRecurring('future')}
                 className="w-full p-4 text-left border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
               >
                 <div className="flex items-center justify-between">
@@ -719,7 +772,7 @@ export default function SchedulePage() {
               </button>
               
               <button
-                onClick={() => handleDeleteRecurring(true)}
+                onClick={() => handleDeleteRecurring('all')}
                 className="w-full p-4 text-left border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
               >
                 <div className="flex items-center justify-between">
