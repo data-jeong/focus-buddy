@@ -141,8 +141,8 @@ export default function TodoWidget({ initialTodos }: { initialTodos: any[] }) {
       onDrop={handleDrop}
     >
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">오늘의 할 일</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">오늘의 할 일</h2>
+        <span className="text-sm text-gray-500 dark:text-gray-300">
           {todos.filter(t => !t.completed).length}개 남음
         </span>
       </div>
@@ -176,7 +176,7 @@ export default function TodoWidget({ initialTodos }: { initialTodos: any[] }) {
               </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2">
-                  <p className={`text-sm flex-1 ${todo.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+                  <p className={`text-sm flex-1 ${todo.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                     {todo.title}
                   </p>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(todo.priority)}`}>

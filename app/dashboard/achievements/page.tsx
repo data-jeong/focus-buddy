@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  Trophy, Target, Clock, Calendar, TrendingUp, Award, 
-  BarChart3, CheckCircle, Zap, Star, Activity, Timer
+  Trophy, Target, Clock, Calendar, TrendingUp, 
+  BarChart3, CheckCircle, Zap, Star, Activity, Timer, Flag
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, addMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, addMonths, eachDayOfInterval, isSameDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function AchievementsPage() {
@@ -19,8 +19,12 @@ export default function AchievementsPage() {
     currentStreak: 0,
     longestStreak: 0,
     monthlyProgress: [],
-    weeklyFocus: [],
-    topTasks: [],
+    dailyActivity: {},
+    topTasksByPriority: {
+      high: [],
+      medium: [],
+      low: []
+    },
   })
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [loading, setLoading] = useState(true)
@@ -37,8 +41,6 @@ export default function AchievementsPage() {
 
     const monthStart = startOfMonth(currentMonth)
     const monthEnd = endOfMonth(currentMonth)
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 })
-    const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 })
 
     // Fetch todos statistics
     const { data: allTodos } = await supabase
@@ -52,13 +54,6 @@ export default function AchievementsPage() {
       .eq('user_id', user.id)
       .gte('created_at', monthStart.toISOString())
       .lte('created_at', monthEnd.toISOString())
-
-    const { data: weeklyTodos } = await supabase
-      .from('todos')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('last_worked_at', weekStart.toISOString())
-      .lte('last_worked_at', weekEnd.toISOString())
 
     // Calculate statistics
     const totalTodos = allTodos?.length || 0
@@ -89,32 +84,64 @@ export default function AchievementsPage() {
       })
     }
 
-    // Get top tasks by time spent
-    const topTasks = (monthlyTodos || [])
-      .filter(t => t.total_time_spent > 0)
-      .sort((a, b) => (b.total_time_spent || 0) - (a.total_time_spent || 0))
-      .slice(0, 5)
-      .map(t => ({
-        title: t.title,
-        time: t.total_time_spent || 0,
-        sessions: t.session_count || 0,
-        completed: t.completed,
-      }))
-
-    // Calculate weekly focus distribution
-    const weeklyFocus = []
-    const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토']
-    for (let i = 0; i < 7; i++) {
-      const dayTodos = weeklyTodos?.filter(t => {
-        if (!t.last_worked_at) return false
-        const day = new Date(t.last_worked_at).getDay()
-        return day === i
-      }) || []
+    // Calculate daily activity for GitHub-style grass
+    const dailyActivity: any = {}
+    const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
+    
+    for (const day of allDays) {
+      const dayStart = new Date(day)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(day)
+      dayEnd.setHours(23, 59, 59, 999)
       
-      weeklyFocus.push({
-        day: daysOfWeek[i],
-        time: dayTodos.reduce((acc, t) => acc + (t.total_time_spent || 0), 0),
-      })
+      const { data: dayTodos } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('last_worked_at', dayStart.toISOString())
+        .lte('last_worked_at', dayEnd.toISOString())
+      
+      const dayKey = format(day, 'yyyy-MM-dd')
+      const dayTime = dayTodos?.reduce((acc, t) => acc + (t.total_time_spent || 0), 0) || 0
+      dailyActivity[dayKey] = {
+        time: dayTime,
+        count: dayTodos?.length || 0,
+        completed: dayTodos?.filter(t => t.completed).length || 0
+      }
+    }
+
+    // Get tasks by priority
+    const topTasksByPriority = {
+      high: (monthlyTodos || [])
+        .filter(t => t.priority === 'high' && t.total_time_spent > 0)
+        .sort((a, b) => (b.total_time_spent || 0) - (a.total_time_spent || 0))
+        .slice(0, 5)
+        .map(t => ({
+          title: t.title,
+          time: t.total_time_spent || 0,
+          sessions: t.session_count || 0,
+          completed: t.completed,
+        })),
+      medium: (monthlyTodos || [])
+        .filter(t => t.priority === 'medium' && t.total_time_spent > 0)
+        .sort((a, b) => (b.total_time_spent || 0) - (a.total_time_spent || 0))
+        .slice(0, 5)
+        .map(t => ({
+          title: t.title,
+          time: t.total_time_spent || 0,
+          sessions: t.session_count || 0,
+          completed: t.completed,
+        })),
+      low: (monthlyTodos || [])
+        .filter(t => t.priority === 'low' && t.total_time_spent > 0)
+        .sort((a, b) => (b.total_time_spent || 0) - (a.total_time_spent || 0))
+        .slice(0, 5)
+        .map(t => ({
+          title: t.title,
+          time: t.total_time_spent || 0,
+          sessions: t.session_count || 0,
+          completed: t.completed,
+        }))
     }
 
     // Calculate streaks (simplified)
@@ -132,10 +159,10 @@ export default function AchievementsPage() {
       averageSessionTime,
       totalSessions,
       currentStreak: todayCompleted > 0 ? 1 : 0,
-      longestStreak: 7, // Simplified for now
+      longestStreak: 7,
       monthlyProgress,
-      weeklyFocus,
-      topTasks,
+      dailyActivity,
+      topTasksByPriority,
     })
 
     setLoading(false)
@@ -149,6 +176,14 @@ export default function AchievementsPage() {
       return `${hours}시간 ${minutes}분`
     }
     return `${minutes}분`
+  }
+
+  const getActivityLevel = (time: number) => {
+    if (time === 0) return 'bg-gray-100 dark:bg-gray-800'
+    if (time < 1800) return 'bg-green-200 dark:bg-green-900/50'  // < 30 min
+    if (time < 3600) return 'bg-green-400 dark:bg-green-700'     // < 1 hour
+    if (time < 7200) return 'bg-green-500 dark:bg-green-600'     // < 2 hours
+    return 'bg-green-600 dark:bg-green-500'                       // >= 2 hours
   }
 
   const completionRate = stats.totalTodos > 0 
@@ -170,11 +205,11 @@ export default function AchievementsPage() {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
           <Trophy className="h-8 w-8 mr-3 text-yellow-500" />
           나의 업적
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-gray-300">
           {format(currentMonth, 'yyyy년 MM월', { locale: ko })}의 성과를 확인하세요
         </p>
       </div>
@@ -183,16 +218,16 @@ export default function AchievementsPage() {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="px-3 py-1.5 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600"
         >
           이전 달
         </button>
-        <span className="text-lg font-medium text-gray-900 dark:text-white">
+        <span className="text-lg font-medium text-white">
           {format(currentMonth, 'yyyy년 MM월', { locale: ko })}
         </span>
         <button
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="px-3 py-1.5 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600"
         >
           다음 달
         </button>
@@ -245,153 +280,186 @@ export default function AchievementsPage() {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Monthly Progress Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />
-            월간 진행 상황
-          </h3>
-          <div className="space-y-3">
-            {stats.monthlyProgress.map((month: any, index: number) => (
-              <div key={index}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">{month.month}</span>
-                  <span className="text-gray-900 dark:text-white font-medium">
-                    {month.completed}개 완료
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-indigo-600 h-2 rounded-full transition-all"
-                    style={{ width: `${Math.min((month.completed / 30) * 100, 100)}%` }}
-                  />
-                </div>
+      {/* GitHub-style Activity Graph */}
+      <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 p-6 mb-8">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <Activity className="h-5 w-5 mr-2 text-green-400" />
+          활동 기록
+        </h3>
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-7 gap-1 min-w-[300px]">
+            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+              <div key={day} className="text-xs text-gray-400 text-center mb-1">
+                {day}
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Weekly Focus Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <Activity className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
-            주간 집중 분포
-          </h3>
-          <div className="flex items-end justify-between h-32 mt-4">
-            {stats.weeklyFocus.map((day: any, index: number) => {
-              const maxTime = Math.max(...stats.weeklyFocus.map((d: any) => d.time), 1)
-              const height = (day.time / maxTime) * 100
+            {eachDayOfInterval({ 
+              start: startOfMonth(currentMonth), 
+              end: endOfMonth(currentMonth) 
+            }).map((day) => {
+              const dayKey = format(day, 'yyyy-MM-dd')
+              const dayData = stats.dailyActivity[dayKey] || { time: 0, count: 0 }
+              const isToday = isSameDay(day, new Date())
               
               return (
-                <div key={index} className="flex flex-col items-center flex-1">
-                  <div className="relative w-full flex justify-center">
-                    <div
-                      className="w-8 bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all"
-                      style={{ height: `${height}px` }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    {day.day}
-                  </span>
+                <div
+                  key={dayKey}
+                  className={`aspect-square rounded-sm ${getActivityLevel(dayData.time)} ${
+                    isToday ? 'ring-2 ring-blue-400' : ''
+                  } relative group cursor-pointer`}
+                  title={`${format(day, 'MM월 dd일')}: ${formatTime(dayData.time)}`}
+                >
+                  {dayData.count > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      {dayData.count}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
+          <div className="flex items-center justify-end mt-4 space-x-2">
+            <span className="text-xs text-gray-400">적음</span>
+            <div className="flex space-x-1">
+              <div className="w-3 h-3 bg-gray-100 dark:bg-gray-800 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-200 dark:bg-green-900/50 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-400 dark:bg-green-700 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-sm"></div>
+              <div className="w-3 h-3 bg-green-600 dark:bg-green-500 rounded-sm"></div>
+            </div>
+            <span className="text-xs text-gray-400">많음</span>
+          </div>
         </div>
       </div>
 
-      {/* Top Tasks */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Star className="h-5 w-5 mr-2 text-yellow-500" />
-          이번 달 주요 작업
-        </h3>
-        {stats.topTasks.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-            아직 작업 기록이 없습니다
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {stats.topTasks.map((task: any, index: number) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                    index === 0 ? 'bg-yellow-500' :
-                    index === 1 ? 'bg-gray-400' :
-                    index === 2 ? 'bg-orange-600' :
-                    'bg-gray-600'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {task.title}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {task.sessions}개 세션
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {formatTime(task.time)}
+      {/* Tasks by Priority */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* High Priority Tasks */}
+        <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Flag className="h-5 w-5 mr-2 text-red-500" />
+            높은 우선순위
+          </h3>
+          {stats.topTasksByPriority.high.length === 0 ? (
+            <p className="text-gray-400 text-center py-8 text-sm">
+              높은 우선순위 작업이 없습니다
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {stats.topTasksByPriority.high.map((task: any, index: number) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-700/50 rounded-lg"
+                >
+                  <p className="font-medium text-white text-sm truncate">
+                    {task.title}
                   </p>
-                  {task.completed && (
-                    <span className="text-xs text-green-600 dark:text-green-400">
-                      완료됨
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-gray-400">
+                      {formatTime(task.time)}
                     </span>
-                  )}
+                    {task.completed && (
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Medium Priority Tasks */}
+        <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Flag className="h-5 w-5 mr-2 text-yellow-500" />
+            보통 우선순위
+          </h3>
+          {stats.topTasksByPriority.medium.length === 0 ? (
+            <p className="text-gray-400 text-center py-8 text-sm">
+              보통 우선순위 작업이 없습니다
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {stats.topTasksByPriority.medium.map((task: any, index: number) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-700/50 rounded-lg"
+                >
+                  <p className="font-medium text-white text-sm truncate">
+                    {task.title}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-gray-400">
+                      {formatTime(task.time)}
+                    </span>
+                    {task.completed && (
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Low Priority Tasks */}
+        <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Flag className="h-5 w-5 mr-2 text-green-500" />
+            낮은 우선순위
+          </h3>
+          {stats.topTasksByPriority.low.length === 0 ? (
+            <p className="text-gray-400 text-center py-8 text-sm">
+              낮은 우선순위 작업이 없습니다
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {stats.topTasksByPriority.low.map((task: any, index: number) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-700/50 rounded-lg"
+                >
+                  <p className="font-medium text-white text-sm truncate">
+                    {task.title}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-gray-400">
+                      {formatTime(task.time)}
+                    </span>
+                    {task.completed && (
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Achievement Badges */}
-      <div className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-indigo-200 dark:border-indigo-800">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Award className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />
-          획득한 배지
+      {/* Monthly Progress */}
+      <div className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <TrendingUp className="h-5 w-5 mr-2 text-indigo-400" />
+          월간 진행 추이
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.completedTodos >= 10 && (
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+        <div className="space-y-3">
+          {stats.monthlyProgress.map((month: any, index: number) => (
+            <div key={index}>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-400">{month.month}</span>
+                <span className="text-white font-medium">
+                  {month.completed}개 완료 · {formatTime(month.time)}
+                </span>
               </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">첫 10개 완료</p>
-            </div>
-          )}
-          {stats.totalTimeSpent >= 3600 && (
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-2">
-                <Timer className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-indigo-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min((month.completed / 30) * 100, 100)}%` }}
+                />
               </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">1시간 달성</p>
             </div>
-          )}
-          {stats.totalSessions >= 5 && (
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-2">
-                <Target className="h-8 w-8 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">5세션 완료</p>
-            </div>
-          )}
-          {completionRate >= 80 && (
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-yellow-100 dark:bg-yellow-900/50 rounded-full flex items-center justify-center mb-2">
-                <Trophy className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">80% 달성</p>
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </div>

@@ -2,23 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Bell, Moon, Sun, Monitor, Settings, Palette, BellOff, Check } from 'lucide-react'
+import { Bell, Settings, BellOff, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { registerServiceWorker, subscribeToPushNotifications, requestNotificationPermission } from '@/lib/push-notifications'
-import { getTheme, setTheme as setThemeToDOM, type Theme } from '@/lib/theme'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [theme, setTheme] = useState<Theme>('system')
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const supabase = createClient()
 
   useEffect(() => {
-    // Get current theme
-    const currentTheme = getTheme()
-    setTheme(currentTheme)
-    
     fetchSettings()
     
     // Check notification permission
@@ -39,13 +33,12 @@ export default function SettingsPage() {
 
     if (!data) {
       // Create default settings
-      const currentTheme = getTheme()
       const { data: newSettings } = await supabase
         .from('user_settings')
         .insert([{
           user_id: user.id,
           notifications_enabled: false,
-          theme: currentTheme,
+          theme: 'dark',
         }])
         .select()
         .single()
@@ -53,10 +46,6 @@ export default function SettingsPage() {
       setSettings(newSettings)
     } else {
       setSettings(data)
-      if (data.theme) {
-        setTheme(data.theme)
-        setThemeToDOM(data.theme)
-      }
     }
   }
 
@@ -101,12 +90,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleThemeChange = async (newTheme: Theme) => {
-    setTheme(newTheme)
-    setThemeToDOM(newTheme)
-    await updateSettings({ theme: newTheme })
-  }
-
   if (!settings) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -118,103 +101,17 @@ export default function SettingsPage() {
     )
   }
 
-  const themeOptions = [
-    {
-      value: 'light' as Theme,
-      label: '라이트 모드',
-      description: '밝은 테마',
-      icon: Sun,
-      iconColor: 'text-yellow-500',
-      preview: 'bg-gradient-to-br from-white via-gray-50 to-gray-100',
-    },
-    {
-      value: 'dark' as Theme,
-      label: '다크 모드',
-      description: '어두운 테마',
-      icon: Moon,
-      iconColor: 'text-indigo-500',
-      preview: 'bg-gradient-to-br from-gray-800 via-gray-900 to-black',
-    },
-    {
-      value: 'system' as Theme,
-      label: '시스템 설정',
-      description: '기기 설정 따르기',
-      icon: Monitor,
-      iconColor: 'text-gray-500',
-      preview: 'bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500',
-    },
-  ]
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">설정</h1>
         <p className="text-base text-gray-600 dark:text-gray-300">
-          앱 환경설정과 개인화 옵션을 관리하세요
+          앱 환경설정을 관리하세요
         </p>
       </div>
 
       <div className="space-y-8">
-        {/* Theme Section */}
-        <section>
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <Palette className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                테마 설정
-              </h2>
-            </div>
-            <p className="text-base text-gray-600 dark:text-gray-300">
-              선호하는 색상 테마를 선택하세요
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {themeOptions.map((option) => {
-              const Icon = option.icon
-              const isSelected = theme === option.value
-              
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => handleThemeChange(option.value)}
-                  className={`relative group overflow-hidden rounded-xl border-2 transition-all transform hover:scale-105 ${
-                    isSelected
-                      ? 'border-indigo-500 shadow-xl ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-900'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-lg'
-                  }`}
-                >
-                  {/* Preview Background */}
-                  <div className={`absolute inset-0 ${option.preview} opacity-30`} />
-                  
-                  {/* Content */}
-                  <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 text-left">
-                    <div className="flex items-start justify-between mb-4">
-                      <Icon className={`h-10 w-10 ${option.iconColor}`} />
-                      {isSelected && (
-                        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-indigo-500 shadow-lg">
-                          <Check className="h-4 w-4 text-white" strokeWidth={3} />
-                        </div>
-                      )}
-                    </div>
-                    <h3 className={`font-semibold text-lg mb-1 ${
-                      isSelected 
-                        ? 'text-indigo-600 dark:text-indigo-400' 
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {option.label}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {option.description}
-                    </p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
         {/* Notifications Section */}
         <section>
           <div className="mb-6">

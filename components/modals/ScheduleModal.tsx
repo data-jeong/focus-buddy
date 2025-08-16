@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format, parse } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import TimePicker from '@/components/ui/TimePicker'
 
 interface ScheduleModalProps {
   open: boolean
@@ -94,6 +93,11 @@ export default function ScheduleModal({
     }
   }, [schedule, open, initialDate, initialStartTime, initialEndTime])
 
+  const validateTime = (time: string) => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+    return timeRegex.test(time)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) {
@@ -106,12 +110,31 @@ export default function ScheduleModal({
       return
     }
 
+    // Validate time format
+    if (!validateTime(startTime)) {
+      toast.error('시작 시간 형식이 올바르지 않습니다 (HH:MM)')
+      return
+    }
+
+    if (!validateTime(endTime)) {
+      toast.error('종료 시간 형식이 올바르지 않습니다 (HH:MM)')
+      return
+    }
+
     // Combine date and time
     const startDateTime = new Date(`${date}T${startTime}:00`)
     const endDateTime = new Date(`${date}T${endTime}:00`)
 
     if (endDateTime <= startDateTime) {
       toast.error('종료 시간은 시작 시간보다 늦어야 합니다')
+      return
+    }
+
+    // Check if end time goes past 23:30
+    const endHours = parseInt(endTime.split(':')[0])
+    const endMinutes = parseInt(endTime.split(':')[1])
+    if (endHours > 23 || (endHours === 23 && endMinutes > 30)) {
+      toast.error('일정은 23:30을 넘길 수 없습니다')
       return
     }
 
@@ -226,16 +249,34 @@ export default function ScheduleModal({
 
             {/* Time Range */}
             <div className="grid grid-cols-2 gap-4">
-              <TimePicker
-                label="시작 시간"
-                value={startTime}
-                onChange={setStartTime}
-              />
-              <TimePicker
-                label="종료 시간"
-                value={endTime}
-                onChange={setEndTime}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <Clock className="inline h-4 w-4 mr-1" />
+                  시작 시간
+                </label>
+                <input
+                  type="text"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="09:00"
+                  pattern="[0-2][0-9]:[0-5][0-9]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <Clock className="inline h-4 w-4 mr-1" />
+                  종료 시간
+                </label>
+                <input
+                  type="text"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="10:00"
+                  pattern="[0-2][0-9]:[0-5][0-9]"
+                />
+              </div>
             </div>
 
             {/* Color */}

@@ -29,6 +29,7 @@ export default function SchedulePage() {
   const [hoveredSchedule, setHoveredSchedule] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -48,6 +49,13 @@ export default function SchedulePage() {
         }
       )
       .subscribe()
+
+    // Auto-scroll to current time on mount
+    if (scrollContainerRef.current && isSameWeek(new Date(), currentWeek, { weekStartsOn: 0 })) {
+      const currentHour = new Date().getHours()
+      const scrollPosition = Math.max(0, (currentHour - 2) * 60) // Show 2 hours before current time
+      scrollContainerRef.current.scrollTop = scrollPosition
+    }
 
     return () => {
       supabase.removeChannel(channel)
@@ -336,9 +344,9 @@ export default function SchedulePage() {
       {/* Calendar Grid */}
       <div className="flex flex-1 overflow-hidden">
         {/* Time labels */}
-        <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-gray-700">
+        <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="h-12 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10"></div>
-          <div className="overflow-y-auto h-full">
+          <div>
             {HOURS.map((hour) => (
               <div
                 key={hour}
@@ -351,7 +359,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Calendar */}
-        <div className="flex-1 relative overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 relative overflow-y-auto">
           {/* Day headers - Sticky */}
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
             {DAYS.map((day, index) => {
