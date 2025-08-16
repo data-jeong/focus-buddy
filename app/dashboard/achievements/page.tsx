@@ -199,13 +199,13 @@ export default function AchievementsPage() {
                     style={{ width: `${achievement.progress}%` }}
                   />
                 </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Badges Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg mb-8">
+        {/* Badges Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg mb-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center">
           <Medal className="h-7 w-7 mr-3 text-yellow-500" />
           획득한 배지
@@ -293,6 +293,7 @@ export default function AchievementsPage() {
             )
           })}
         </div>
+      </div>
       </div>
     </div>
   )
