@@ -1,132 +1,181 @@
-# Focus Buddy - ADHD 스마트 일정 관리
+# Focus Buddy 🎯
 
-ADHD를 위한 할 일 관리, 시간표, 알림 기능을 제공하는 생산성 도구입니다.
+[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/data-jeong/focus-buddy/releases)
+[![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## 주요 기능
+개인 생산성을 극대화하는 모던 웹 애플리케이션. 할일 관리, 일정 관리, 포커스 타이머를 통합한 올인원 생산성 도구입니다.
 
-- ✅ **할 일 관리**: 우선순위 설정, 마감일 관리, 실시간 동기화
-- 📅 **시간표/일정 관리**: 주간 캘린더 뷰, 반복 일정 설정
-- 🔔 **웹 푸시 알림**: 일정 리마인더, 할 일 마감 알림
-- 📱 **Google Calendar 연동**: 기존 일정과 자동 동기화
-- 🌙 **다크모드 지원**: 시스템 설정 연동
-- ⚡ **실시간 업데이트**: Supabase를 통한 실시간 데이터 동기화
-- 🎯 **ADHD 친화적 UI**: 집중력 향상을 위한 깔끔한 인터페이스
+## 🚀 Live Demo
 
-## 기술 스택
+[https://focus-buddy.vercel.app](https://focus-buddy.vercel.app)
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
-- **알림**: Web Push API
-- **캘린더**: Google Calendar API
-- **UI Components**: Radix UI, Lucide Icons
+## ✨ 주요 기능
 
-## 설치 및 실행
+### 📝 할일 관리 (Todo)
+- 우선순위별 할일 관리 (높음/중간/낮음)
+- 오늘의 할일 위젯
+- 마감일 설정 및 관리
+- 완료 상태 추적
+- 실시간 동기화
 
-### 1. 프로젝트 클론 및 의존성 설치
+### 📅 일정 관리 (Schedule)
+- 주간 캘린더 뷰
+- 반복 일정 설정 (매일/주중/주말/주간/월간/연간)
+- 색상 커스터마이징
+- 드래그 앤 드롭으로 일정 생성
+- 종일 일정 지원
 
+### ⏱️ 포커스 타이머
+- 뽀모도로 테크닉 (25분 집중, 5분 휴식)
+- 짧은 집중 (15분) / 긴 집중 (50분) 모드
+- 작업별 시간 추적
+- 세션 통계 및 분석
+- 자동 휴식 시간 전환
+
+### 🎨 사용자 경험
+- 🌙 다크모드 지원
+- 📱 반응형 디자인 (모바일/태블릿/데스크톱)
+- 💾 실시간 데이터 동기화
+- 🔐 안전한 사용자 인증
+
+## 🛠️ 기술 스택
+
+### Frontend
+- **Framework**: [Next.js 15.4.6](https://nextjs.org/) - React 기반 풀스택 프레임워크
+- **Language**: [TypeScript](https://www.typescriptlang.org/) - 타입 안정성
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - 유틸리티 우선 CSS
+- **UI Components**: [Radix UI](https://www.radix-ui.com/) - 접근성 우선 컴포넌트
+- **Icons**: [Lucide React](https://lucide.dev/) - 모던 아이콘 세트
+- **Date**: [date-fns](https://date-fns.org/) - 날짜 처리 라이브러리
+
+### Backend
+- **Database**: [Supabase](https://supabase.com/) PostgreSQL
+- **Authentication**: Supabase Auth
+- **Real-time**: Supabase Realtime
+- **Storage**: Supabase Storage
+
+### Deployment
+- **Platform**: [Vercel](https://vercel.com/)
+- **Analytics**: Vercel Analytics
+- **CI/CD**: GitHub Actions
+
+## 📦 설치 및 실행
+
+### 사전 요구사항
+- Node.js 18.0 이상
+- npm 또는 yarn
+- Supabase 계정
+
+### 1. 저장소 클론
 ```bash
-git clone [repository-url]
+git clone https://github.com/data-jeong/focus-buddy.git
 cd focus-buddy
-npm install
 ```
 
-### 2. Supabase 설정
-
-1. [Supabase](https://supabase.com)에서 새 프로젝트 생성
-2. SQL Editor에서 `supabase/schema.sql` 파일 내용 실행
-3. Authentication > Providers에서 Google OAuth 활성화
-
-### 3. Google Calendar API 설정
-
-1. [Google Cloud Console](https://console.cloud.google.com)에서 새 프로젝트 생성
-2. Google Calendar API 활성화
-3. OAuth 2.0 Client ID 생성
-4. Authorized redirect URIs에 `http://localhost:3000/api/auth/google/callback` 추가
-
-### 4. VAPID Keys 생성 (Web Push용)
-
+### 2. 의존성 설치
 ```bash
-npm run generate-vapid
+npm install
+# 또는
+yarn install
 ```
 
-### 5. 환경 변수 설정
-
-`.env.local` 파일을 수정하여 실제 값 입력:
-
+### 3. 환경 변수 설정
+`.env.local` 파일을 생성하고 다음 내용을 추가:
 ```env
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Google Calendar API
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
-
-# Web Push (VAPID Keys)
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
-VAPID_PRIVATE_KEY=your_vapid_private_key
-VAPID_SUBJECT=mailto:your-email@example.com
 ```
 
-### 6. 개발 서버 실행
+### 4. 데이터베이스 마이그레이션
+```bash
+# Supabase 대시보드에서 SQL 에디터를 열고
+# supabase/migrations/ 폴더의 SQL 파일들을 순서대로 실행
+```
 
+### 5. 개발 서버 실행
 ```bash
 npm run dev
+# 또는
+yarn dev
 ```
 
-브라우저에서 http://localhost:3000 접속
+[http://localhost:3000](http://localhost:3000)에서 확인 가능합니다.
 
-## 프로젝트 구조
+## 📁 프로젝트 구조
 
 ```
 focus-buddy/
-├── app/                      # Next.js App Router
-│   ├── api/                 # API Routes
-│   ├── auth/                # 인증 페이지
-│   └── dashboard/           # 대시보드 페이지들
-├── components/              # React 컴포넌트
-│   ├── dashboard/          # 대시보드 컴포넌트
-│   └── modals/             # 모달 컴포넌트
-├── lib/                     # 유틸리티 함수
-│   └── supabase/           # Supabase 클라이언트
-├── public/                  # 정적 파일
-│   └── sw.js              # Service Worker
-├── supabase/               # 데이터베이스 스키마
-└── types/                  # TypeScript 타입 정의
+├── app/                    # Next.js App Router
+│   ├── api/               # API 라우트
+│   ├── auth/              # 인증 페이지
+│   └── dashboard/         # 대시보드 페이지
+├── components/            # React 컴포넌트
+│   ├── dashboard/         # 대시보드 컴포넌트
+│   ├── modals/           # 모달 컴포넌트
+│   └── ui/               # UI 컴포넌트
+├── lib/                   # 유틸리티 및 설정
+│   ├── constants/        # 상수 정의
+│   ├── supabase/         # Supabase 클라이언트
+│   └── utils/            # 유틸리티 함수
+├── supabase/             # Supabase 설정
+│   └── migrations/       # 데이터베이스 마이그레이션
+└── public/               # 정적 파일
 ```
 
-## 사용 방법
-
-1. **회원가입/로그인**: 이메일 또는 Google 계정으로 로그인
-2. **할 일 추가**: 대시보드에서 "할 일 추가" 버튼 클릭
-3. **일정 관리**: 시간표 페이지에서 드래그&드롭으로 일정 추가
-4. **알림 설정**: 설정 페이지에서 푸시 알림 활성화
-5. **Google Calendar 연동**: 설정에서 Google Calendar 연결
-
-## 배포
+## 🚀 배포
 
 ### Vercel 배포 (권장)
 
 1. [Vercel](https://vercel.com)에 GitHub 저장소 연결
 2. 환경 변수 설정
-3. 자동 배포
+3. 자동 배포 활성화
 
-### 수동 배포
+### 수동 빌드
 
 ```bash
+# 프로덕션 빌드
 npm run build
+
+# 프로덕션 실행
 npm start
 ```
 
-## 라이선스
+## 📈 버전 히스토리
 
-MIT
+### v0.1.1 (2024-01-16)
+- 🔧 TypeScript 타입 안정성 개선
+- 🐛 빌드 에러 수정
+- 📝 문서 업데이트
+- 🎨 코드 품질 개선
 
-## 기여
+### v0.1.0 (2024-01-16)
+- 🎉 첫 번째 공식 릴리즈
+- ✨ 핵심 기능 구현 완료
+- 🚀 Vercel 배포
 
-Pull Request와 이슈는 언제나 환영합니다!
+## 🤝 기여하기
+
+기여는 언제나 환영합니다! 
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 라이선스
+
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+## 📞 연락처
+
+- **Developer**: Data Jeong
+- **GitHub**: [@data-jeong](https://github.com/data-jeong)
+- **Email**: lightyear94122@gmail.com
+
+## 🙏 감사의 말
+
+Focus Buddy를 사용해주셔서 감사합니다! 피드백은 언제나 환영입니다.

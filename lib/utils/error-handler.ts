@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 export interface AppError {
   code: string
   message: string
-  details?: any
+  details?: unknown
 }
 
 export class ErrorHandler {
@@ -13,6 +13,7 @@ export class ErrorHandler {
     if (error instanceof Error) {
       // Supabase specific errors
       if ('code' in error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.handleSupabaseError(error as any, userMessage)
         return
       }
@@ -30,6 +31,7 @@ export class ErrorHandler {
     }
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static handleSupabaseError(error: any, userMessage?: string): void {
     const errorMessages: Record<string, string> = {
       '23505': '중복된 데이터가 존재합니다.',

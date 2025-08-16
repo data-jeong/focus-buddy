@@ -5,7 +5,7 @@ import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, Coffee, SkipForward
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
-import { cardStyles, headerStyles, buttonStyles, inputStyles, textStyles } from '@/lib/constants/styles'
+import { cardStyles, headerStyles, inputStyles, textStyles } from '@/lib/constants/styles'
 
 const FOCUS_MODES = [
   { id: 'pomodoro', name: '뽀모도로', focusTime: 25, breakTime: 5 },
@@ -13,9 +13,24 @@ const FOCUS_MODES = [
   { id: 'long', name: '긴 집중', focusTime: 50, breakTime: 10 },
 ]
 
+interface Todo {
+  id: string
+  title: string
+  description?: string
+  priority: string
+  completed: boolean
+  due_date?: string
+  total_time_spent?: number
+  last_session_time?: number
+  session_count?: number
+  last_worked_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export default function CurrentTask() {
-  const [currentTask, setCurrentTask] = useState<any>(null)
-  const [todos, setTodos] = useState<any[]>([])
+  const [currentTask, setCurrentTask] = useState<Todo | null>(null)
+  const [todos, setTodos] = useState<Todo[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(FOCUS_MODES[0])
   const [timeLeft, setTimeLeft] = useState(focusMode.focusTime * 60)

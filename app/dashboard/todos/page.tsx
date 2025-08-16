@@ -8,11 +8,22 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
+interface Todo {
+  id: string
+  title: string
+  description?: string
+  priority: string
+  completed: boolean
+  due_date?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export default function TodosPage() {
-  const [todos, setTodos] = useState<any[]>([])
-  const [filteredTodos, setFilteredTodos] = useState<any[]>([])
+  const [todos, setTodos] = useState<Todo[]>([])
+  const [filteredTodos, setFilteredTodos] = useState<Todo[]>([])
   const [modalOpen, setModalOpen] = useState(false)
-  const [selectedTodo, setSelectedTodo] = useState<any>(null)
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null)
   const [filter, setFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; todoId: string | null; todoTitle: string }>({ 

@@ -3,15 +3,25 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  Trophy, Flame, Target, Sparkles, Star, TrendingUp, 
-  Award, Zap, Activity, Timer, Crown, Medal, Rocket
+  Flame, Target, Sparkles, 
+  Zap, Activity, Timer, Medal
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
+interface Todo {
+  id: string
+  title: string
+  completed: boolean
+  created_at: string
+  updated_at?: string
+  total_time_spent?: number
+  session_count?: number
+}
+
 export default function AchievementsPage() {
   const [currentMonth] = useState(new Date())
-  const [todos, setTodos] = useState<any[]>([])
+  const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 

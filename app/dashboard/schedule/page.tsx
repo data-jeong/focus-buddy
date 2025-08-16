@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, 
-         setHours, setMinutes, addMonths, subMonths, startOfMonth, 
-         endOfMonth, eachDayOfInterval, isWithinInterval, parseISO,
-         isSameMonth, isSameWeek } from 'date-fns'
+import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks, isSameWeek } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit, X, Calendar, Clock, Repeat } from 'lucide-react'
 import ScheduleModal from '@/components/modals/ScheduleModal'
@@ -14,12 +11,29 @@ import toast from 'react-hot-toast'
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
 
+interface Schedule {
+  id: string
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+  all_day?: boolean
+  recurrence?: string
+  recurrence_end?: string
+  color?: string
+  created_at?: string
+  updated_at?: string
+  excluded_dates?: string | string[]
+  is_recurring_instance?: boolean
+  original_id?: string
+}
+
 export default function SchedulePage() {
-  const [schedules, setSchedules] = useState<any[]>([])
-  const [recurringSchedules, setRecurringSchedules] = useState<any[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [recurringSchedules, setRecurringSchedules] = useState<Schedule[]>([])
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
-  const [selectedSchedule, setSelectedSchedule] = useState<any>(null)
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState<{ day: number; hour: number; minutes: number } | null>(null)
   const [dragEnd, setDragEnd] = useState<{ day: number; hour: number; minutes: number } | null>(null)
