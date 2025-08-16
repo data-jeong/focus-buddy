@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, Coffee, SkipForward } from 'lucide-react'
+import { Play, Pause, RotateCcw, CheckCircle, Clock, Target, Coffee, SkipForward, Timer, TrendingUp, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -19,9 +19,11 @@ export default function CurrentTask() {
   const [timeLeft, setTimeLeft] = useState(focusMode.focusTime * 60)
   const [isRunning, setIsRunning] = useState(false)
   const [isBreak, setIsBreak] = useState(false)
+  const [sessionTime, setSessionTime] = useState(0) // Current session time in seconds
   const [totalFocusTime, setTotalFocusTime] = useState(0)
   const [sessionsCompleted, setSessionsCompleted] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -58,7 +60,18 @@ export default function CurrentTask() {
   }, [focusMode])
 
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && !isBreak) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleTimerComplete()
+            return 0
+          }
+          return prev - 1
+        })
+        setSessionTime(prev => prev + 1)
+      }, 1000)
+    } else if (isRunning && isBreak) {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -109,7 +122,29 @@ export default function CurrentTask() {
     }
   }
 
-  const handleTimerComplete = () => {
+  const saveTimeToDatabase = async (taskId: string, timeSpent: number) => {
+    if (!taskId || timeSpent === 0) return
+
+    const { data: currentTodo } = await supabase
+      .from('todos')
+      .select('total_time_spent, session_count')
+      .eq('id', taskId)
+      .single()
+
+    if (currentTodo) {
+      await supabase
+        .from('todos')
+        .update({
+          total_time_spent: (currentTodo.total_time_spent || 0) + timeSpent,
+          last_session_time: timeSpent,
+          session_count: (currentTodo.session_count || 0) + 1,
+          last_worked_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+    }
+  }
+
+  const handleTimerComplete = async () => {
     setIsRunning(false)
     
     // Play notification sound
@@ -117,14 +152,21 @@ export default function CurrentTask() {
     audio.play().catch(e => console.log('Audio play failed:', e))
     
     if (!isBreak) {
-      // Focus session completed
+      // Focus session completed - save time
+      if (currentTask && sessionTime > 0) {
+        await saveTimeToDatabase(currentTask.id, sessionTime)
+      }
+      
       setTotalFocusTime(prev => prev + focusMode.focusTime)
       setSessionsCompleted(prev => prev + 1)
       
-      toast.success('포커스 세션 완료! 잠시 휴식하세요.', {
+      toast.success(`포커스 세션 완료! ${formatTime(sessionTime)} 작업했습니다.`, {
         duration: 5000,
         icon: '🎉'
       })
+      
+      // Reset session time for next session
+      setSessionTime(0)
       
       // Start break
       setIsBreak(true)
@@ -148,33 +190,62 @@ export default function CurrentTask() {
       return
     }
     setIsRunning(true)
+    sessionStartTime.current = new Date()
   }
 
-  const handlePause = () => {
+  const handlePause = async () => {
     setIsRunning(false)
+    
+    // Save current session time when pausing
+    if (!isBreak && currentTask && sessionTime > 0) {
+      await saveTimeToDatabase(currentTask.id, sessionTime)
+      toast.success(`${formatTime(sessionTime)} 저장됨`, { duration: 2000 })
+    }
   }
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    // Save time before resetting if there's any
+    if (!isBreak && currentTask && sessionTime > 0) {
+      await saveTimeToDatabase(currentTask.id, sessionTime)
+    }
+    
     setIsRunning(false)
     setIsBreak(false)
     setTimeLeft(focusMode.focusTime * 60)
+    setSessionTime(0)
   }
 
   const handleComplete = async () => {
     if (!currentTask) return
+    
+    // Save final session time
+    if (sessionTime > 0) {
+      await saveTimeToDatabase(currentTask.id, sessionTime)
+    }
     
     await supabase
       .from('todos')
       .update({ completed: true })
       .eq('id', currentTask.id)
     
-    toast.success('작업 완료! 🎉')
+    const totalTime = (currentTask.total_time_spent || 0) + sessionTime
+    toast.success(`작업 완료! 총 ${formatTime(totalTime)} 소요`, {
+      duration: 5000,
+      icon: '🎉'
+    })
+    
     setIsRunning(false)
     setIsBreak(false)
     setTimeLeft(focusMode.focusTime * 60)
+    setSessionTime(0)
   }
 
   const handleTaskSelect = (taskId: string) => {
+    // Save current session time before switching
+    if (currentTask && sessionTime > 0 && !isBreak) {
+      saveTimeToDatabase(currentTask.id, sessionTime)
+    }
+    
     const task = todos.find(t => t.id === taskId)
     if (task) {
       setSelectedTaskId(taskId)
@@ -182,6 +253,7 @@ export default function CurrentTask() {
       setIsRunning(false)
       setIsBreak(false)
       setTimeLeft(focusMode.focusTime * 60)
+      setSessionTime(0)
     }
   }
 
@@ -193,6 +265,20 @@ export default function CurrentTask() {
   }
 
   const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    
+    if (hours > 0) {
+      return `${hours}시간 ${mins}분 ${secs}초`
+    } else if (mins > 0) {
+      return `${mins}분 ${secs}초`
+    } else {
+      return `${secs}초`
+    }
+  }
+
+  const formatTimeShort = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
@@ -206,15 +292,23 @@ export default function CurrentTask() {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">포커스 타이머</h2>
-        <div className="flex items-center space-x-2">
-          <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            오늘 {sessionsCompleted}개 세션 | 총 {totalFocusTime}분
-          </span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              오늘 {sessionsCompleted}개 세션
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Clock className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              총 {totalFocusTime}분
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Task Selection */}
+      {/* Task Selection with Time Stats */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           작업 선택
@@ -227,11 +321,54 @@ export default function CurrentTask() {
           <option value="">작업을 선택하세요</option>
           {todos.map((todo) => (
             <option key={todo.id} value={todo.id}>
-              [{todo.priority === 'high' ? '높음' : todo.priority === 'medium' ? '보통' : '낮음'}] {todo.title}
+              [{todo.priority === 'high' ? '높음' : todo.priority === 'medium' ? '보통' : '낮음'}] 
+              {todo.title} 
+              {todo.total_time_spent > 0 && ` (${formatTime(todo.total_time_spent)})`}
             </option>
           ))}
         </select>
       </div>
+
+      {/* Task Stats */}
+      {currentTask && (
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="flex items-center justify-center mb-1">
+                <Timer className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">총 시간</span>
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {formatTime(currentTask.total_time_spent || 0)}
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-center mb-1">
+                <TrendingUp className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">세션 수</span>
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {currentTask.session_count || 0}회
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-center mb-1">
+                <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+                <span className="text-xs text-gray-500 dark:text-gray-400">마지막 작업</span>
+              </div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {currentTask.last_worked_at 
+                  ? new Date(currentTask.last_worked_at).toLocaleDateString('ko-KR', { 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })
+                  : '없음'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Focus Mode Selection */}
       <div className="mb-6">
@@ -275,6 +412,11 @@ export default function CurrentTask() {
                   {currentTask.description}
                 </p>
               )}
+              {isRunning && !isBreak && (
+                <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-2">
+                  현재 세션: {formatTimeShort(sessionTime)}
+                </p>
+              )}
             </div>
           )}
           
@@ -291,7 +433,7 @@ export default function CurrentTask() {
 
         <div className="text-center ml-6">
           <div className="text-4xl font-bold text-gray-900 dark:text-gray-100 font-mono">
-            {formatTime(timeLeft)}
+            {formatTimeShort(timeLeft)}
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {isBreak ? (
