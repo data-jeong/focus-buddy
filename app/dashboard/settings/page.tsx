@@ -5,14 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import { Bell, Moon, Sun, Monitor } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { registerServiceWorker, subscribeToPushNotifications, requestNotificationPermission } from '@/lib/push-notifications'
-import { useSearchParams } from 'next/navigation'
+import { useTheme } from '@/components/ThemeProvider'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const supabase = createClient()
-  const searchParams = useSearchParams()
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     fetchSettings()
@@ -48,6 +48,7 @@ export default function SettingsPage() {
       setSettings(newSettings)
     } else {
       setSettings(data)
+      setTheme(data.theme || 'system')
     }
   }
 
@@ -89,16 +90,9 @@ export default function SettingsPage() {
     }
   }
 
-
-  const handleThemeChange = async (theme: string) => {
-    await updateSettings({ theme })
-    
-    // Apply theme
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+  const handleThemeChange = async (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme)
+    await updateSettings({ theme: newTheme })
   }
 
   if (!settings) {
@@ -107,23 +101,23 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">설정</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">설정</h1>
 
       {/* Notifications */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Bell className="h-5 w-5 text-gray-600" />
+            <Bell className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             <div>
-              <h3 className="text-sm font-medium text-gray-900">푸시 알림</h3>
-              <p className="text-sm text-gray-500">할 일 리마인더와 일정 알림을 받습니다</p>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">푸시 알림</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">할 일 리마인더와 일정 알림을 받습니다</p>
             </div>
           </div>
           <button
             onClick={handleNotificationToggle}
             disabled={loading}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              settings.notifications_enabled ? 'bg-indigo-600' : 'bg-gray-200'
+              settings.notifications_enabled ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'
             }`}
           >
             <span
@@ -135,49 +129,48 @@ export default function SettingsPage() {
         </div>
         
         {notificationPermission === 'denied' && (
-          <div className="mt-3 p-3 bg-red-50 text-red-700 text-sm rounded-lg">
+          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-lg">
             브라우저에서 알림이 차단되었습니다. 브라우저 설정에서 알림을 허용해주세요.
           </div>
         )}
       </div>
 
-
       {/* Theme */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">테마</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">테마</h3>
         <div className="grid grid-cols-3 gap-3">
           <button
             onClick={() => handleThemeChange('light')}
             className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-colors ${
-              settings.theme === 'light'
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-200 hover:border-gray-300'
+              theme === 'light'
+                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
             }`}
           >
-            <Sun className="h-6 w-6 mb-1 text-gray-600" />
-            <span className="text-sm">라이트</span>
+            <Sun className="h-6 w-6 mb-1 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">라이트</span>
           </button>
           <button
             onClick={() => handleThemeChange('dark')}
             className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-colors ${
-              settings.theme === 'dark'
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-200 hover:border-gray-300'
+              theme === 'dark'
+                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
             }`}
           >
-            <Moon className="h-6 w-6 mb-1 text-gray-600" />
-            <span className="text-sm">다크</span>
+            <Moon className="h-6 w-6 mb-1 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">다크</span>
           </button>
           <button
             onClick={() => handleThemeChange('system')}
             className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-colors ${
-              settings.theme === 'system'
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-200 hover:border-gray-300'
+              theme === 'system'
+                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
             }`}
           >
-            <Monitor className="h-6 w-6 mb-1 text-gray-600" />
-            <span className="text-sm">시스템</span>
+            <Monitor className="h-6 w-6 mb-1 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">시스템</span>
           </button>
         </div>
       </div>
