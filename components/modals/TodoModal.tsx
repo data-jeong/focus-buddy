@@ -76,6 +76,8 @@ export default function TodoModal({ open, onClose, todo, onSuccess }: TodoModalP
 
       onSuccess?.() // Call success callback if provided
       onClose()
+      // Force refresh to update dashboard
+      window.location.reload()
     } catch (error) {
       toast.error('오류가 발생했습니다')
     } finally {

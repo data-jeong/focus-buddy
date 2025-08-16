@@ -203,6 +203,8 @@ export default function ScheduleModal({
         toast.success('일정이 수정되었습니다')
         onSuccess?.() // Call success callback if provided
         onClose()
+        // Force refresh to update dashboard
+        window.location.reload()
       }
     } else {
       // Create new schedule
@@ -217,6 +219,8 @@ export default function ScheduleModal({
         toast.success('일정이 추가되었습니다')
         onSuccess?.() // Call success callback if provided
         onClose()
+        // Force refresh to update dashboard
+        window.location.reload()
       }
     }
     

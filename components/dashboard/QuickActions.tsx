@@ -228,17 +228,11 @@ export default function QuickActions() {
       
       <TodoModal 
         open={todoModalOpen} 
-        onClose={() => {
-          setTodoModalOpen(false)
-          fetchStats() // Re-fetch stats after modal closes
-        }} 
+        onClose={() => setTodoModalOpen(false)} 
       />
       <ScheduleModal 
         open={scheduleModalOpen} 
-        onClose={() => {
-          setScheduleModalOpen(false)
-          fetchStats() // Re-fetch stats after modal closes
-        }} 
+        onClose={() => setScheduleModalOpen(false)} 
       />
     </>
   )

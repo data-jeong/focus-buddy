@@ -223,10 +223,6 @@ export default function CurrentTask() {
   const handleTimerComplete = async () => {
     setIsRunning(false)
     
-    // Play notification sound
-    const audio = new Audio('/notification.mp3')
-    audio.play().catch(e => console.log('Audio play failed:', e))
-    
     if (!isBreak) {
       // Focus session completed - save time
       if (currentTask && sessionTime > 0) {
